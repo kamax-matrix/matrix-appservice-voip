@@ -18,34 +18,26 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-apply plugin: 'java'
-apply plugin: 'org.springframework.boot'
+package io.kamax.matrix.bridge.voip.matrix;
 
-group = 'kamax.io'
+import io.kamax.matrix.client._MatrixClient;
 
-buildscript {
-    repositories {
-        jcenter()
+public class MatrixBridgeUser {
+
+    private _MatrixClient client;
+    private String remoteId;
+
+    public MatrixBridgeUser(_MatrixClient client, String remoteId) {
+        this.client = client;
+        this.remoteId = remoteId;
     }
 
-    dependencies {
-        classpath 'org.springframework.boot:spring-boot-gradle-plugin:2.0.1.RELEASE'
+    public _MatrixClient getClient() {
+        return client;
     }
-}
 
-dependencies {
-    compile 'io.kamax:matrix-java-sdk:0.0.12-8-g6a22724'
-    compile 'org.springframework.boot:spring-boot-starter-web:2.0.1.RELEASE'
-    compile 'org.apache.commons:commons-collections4:4.1'
-    testCompile 'junit:junit:4.12'
-}
+    public String getRemoteId() {
+        return remoteId;
+    }
 
-repositories {
-    maven { url 'https://kamax.io/maven/snapshots/' }
-    maven { url 'https://kamax.io/maven/releases/' }
-    jcenter()
-}
-
-bootJar {
-    launchScript()
 }

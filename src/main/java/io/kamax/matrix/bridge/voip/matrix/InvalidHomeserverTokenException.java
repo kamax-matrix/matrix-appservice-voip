@@ -18,16 +18,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package io.kamax.matrix.bridge.voip;
+package io.kamax.matrix.bridge.voip.matrix;
 
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
+public class InvalidHomeserverTokenException extends MatrixException {
 
-@SpringBootApplication
-public class MatrixAppserviceVoipApplication {
-
-    public static void main(String[] args) {
-        SpringApplication.run(MatrixAppserviceVoipApplication.class);
+    @Override
+    public String getErrorCode() {
+        return "M_FORBIDDEN";
     }
 
 }

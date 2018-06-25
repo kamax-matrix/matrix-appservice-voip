@@ -18,34 +18,31 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-apply plugin: 'java'
-apply plugin: 'org.springframework.boot'
+package io.kamax.matrix.bridge.voip.matrix;
 
-group = 'kamax.io'
+import io.kamax.matrix.event._MatrixEvent;
 
-buildscript {
-    repositories {
-        jcenter()
+import java.util.List;
+
+public class Transaction {
+
+    private String id;
+    private List<_MatrixEvent> events;
+
+    public String getId() {
+        return id;
     }
 
-    dependencies {
-        classpath 'org.springframework.boot:spring-boot-gradle-plugin:2.0.1.RELEASE'
+    public void setId(String id) {
+        this.id = id;
     }
-}
 
-dependencies {
-    compile 'io.kamax:matrix-java-sdk:0.0.12-8-g6a22724'
-    compile 'org.springframework.boot:spring-boot-starter-web:2.0.1.RELEASE'
-    compile 'org.apache.commons:commons-collections4:4.1'
-    testCompile 'junit:junit:4.12'
-}
+    public List<_MatrixEvent> getEvents() {
+        return events;
+    }
 
-repositories {
-    maven { url 'https://kamax.io/maven/snapshots/' }
-    maven { url 'https://kamax.io/maven/releases/' }
-    jcenter()
-}
+    public void setEvents(List<_MatrixEvent> events) {
+        this.events = events;
+    }
 
-bootJar {
-    launchScript()
 }

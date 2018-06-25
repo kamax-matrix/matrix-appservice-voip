@@ -18,34 +18,27 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-apply plugin: 'java'
-apply plugin: 'org.springframework.boot'
+package io.kamax.matrix.bridge.voip.remote.call;
 
-group = 'kamax.io'
+import org.apache.commons.lang3.StringUtils;
 
-buildscript {
-    repositories {
-        jcenter()
+public enum VertoMethod {
+
+    Invite("verto.invite"),
+    Bye("verto.bye");
+
+    private String id;
+
+    VertoMethod(String id) {
+        this.id = id;
     }
 
-    dependencies {
-        classpath 'org.springframework.boot:spring-boot-gradle-plugin:2.0.1.RELEASE'
+    public String getId() {
+        return id;
     }
-}
 
-dependencies {
-    compile 'io.kamax:matrix-java-sdk:0.0.12-8-g6a22724'
-    compile 'org.springframework.boot:spring-boot-starter-web:2.0.1.RELEASE'
-    compile 'org.apache.commons:commons-collections4:4.1'
-    testCompile 'junit:junit:4.12'
-}
+    public boolean matches(String id) {
+        return StringUtils.endsWith(this.id, id);
+    }
 
-repositories {
-    maven { url 'https://kamax.io/maven/snapshots/' }
-    maven { url 'https://kamax.io/maven/releases/' }
-    jcenter()
-}
-
-bootJar {
-    launchScript()
 }

@@ -18,34 +18,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-apply plugin: 'java'
-apply plugin: 'org.springframework.boot'
+package io.kamax.matrix.bridge.voip;
 
-group = 'kamax.io'
+import io.kamax.matrix.bridge.voip.matrix.RoomNotFoundException;
+import io.kamax.matrix.bridge.voip.matrix.Transaction;
+import io.kamax.matrix.bridge.voip.matrix.UserNotFoundException;
 
-buildscript {
-    repositories {
-        jcenter()
-    }
+public interface HomeView {
 
-    dependencies {
-        classpath 'org.springframework.boot:spring-boot-gradle-plugin:2.0.1.RELEASE'
-    }
-}
+    void queryUser(String user) throws UserNotFoundException;
 
-dependencies {
-    compile 'io.kamax:matrix-java-sdk:0.0.12-8-g6a22724'
-    compile 'org.springframework.boot:spring-boot-starter-web:2.0.1.RELEASE'
-    compile 'org.apache.commons:commons-collections4:4.1'
-    testCompile 'junit:junit:4.12'
-}
+    void queryRoom(String room) throws RoomNotFoundException;
 
-repositories {
-    maven { url 'https://kamax.io/maven/snapshots/' }
-    maven { url 'https://kamax.io/maven/releases/' }
-    jcenter()
-}
+    void process(Transaction transaction);
 
-bootJar {
-    launchScript()
 }

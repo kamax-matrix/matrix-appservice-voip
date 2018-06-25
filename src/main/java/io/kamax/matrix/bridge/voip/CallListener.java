@@ -18,34 +18,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-apply plugin: 'java'
-apply plugin: 'org.springframework.boot'
+package io.kamax.matrix.bridge.voip;
 
-group = 'kamax.io'
+public interface CallListener {
 
-buildscript {
-    repositories {
-        jcenter()
-    }
+    void onInvite(String from, CallInviteEvent ev);
 
-    dependencies {
-        classpath 'org.springframework.boot:spring-boot-gradle-plugin:2.0.1.RELEASE'
-    }
-}
+    void onCandidates(CallCandidatesEvent ev);
 
-dependencies {
-    compile 'io.kamax:matrix-java-sdk:0.0.12-8-g6a22724'
-    compile 'org.springframework.boot:spring-boot-starter-web:2.0.1.RELEASE'
-    compile 'org.apache.commons:commons-collections4:4.1'
-    testCompile 'junit:junit:4.12'
-}
+    void onAnswer(CallAnswerEvent ev);
 
-repositories {
-    maven { url 'https://kamax.io/maven/snapshots/' }
-    maven { url 'https://kamax.io/maven/releases/' }
-    jcenter()
-}
+    void onHangup(CallHangupEvent ev);
 
-bootJar {
-    launchScript()
+    void onClose();
+
 }

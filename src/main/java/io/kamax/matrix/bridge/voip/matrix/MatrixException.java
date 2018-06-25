@@ -18,34 +18,22 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-apply plugin: 'java'
-apply plugin: 'org.springframework.boot'
+package io.kamax.matrix.bridge.voip.matrix;
 
-group = 'kamax.io'
+public abstract class MatrixException extends RuntimeException {
 
-buildscript {
-    repositories {
-        jcenter()
+    public MatrixException() {
+        super();
     }
 
-    dependencies {
-        classpath 'org.springframework.boot:spring-boot-gradle-plugin:2.0.1.RELEASE'
+    public MatrixException(String s) {
+        super(s);
     }
-}
 
-dependencies {
-    compile 'io.kamax:matrix-java-sdk:0.0.12-8-g6a22724'
-    compile 'org.springframework.boot:spring-boot-starter-web:2.0.1.RELEASE'
-    compile 'org.apache.commons:commons-collections4:4.1'
-    testCompile 'junit:junit:4.12'
-}
+    public MatrixException(Throwable t) {
+        super(t);
+    }
 
-repositories {
-    maven { url 'https://kamax.io/maven/snapshots/' }
-    maven { url 'https://kamax.io/maven/releases/' }
-    jcenter()
-}
+    public abstract String getErrorCode();
 
-bootJar {
-    launchScript()
 }

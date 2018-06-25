@@ -18,34 +18,34 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-apply plugin: 'java'
-apply plugin: 'org.springframework.boot'
+package io.kamax.matrix.bridge.voip;
 
-group = 'kamax.io'
+import java.util.Objects;
 
-buildscript {
-    repositories {
-        jcenter()
+public class CallEvent {
+
+    private String callId;
+    private Long version;
+
+    public String getCallId() {
+        return callId;
     }
 
-    dependencies {
-        classpath 'org.springframework.boot:spring-boot-gradle-plugin:2.0.1.RELEASE'
+    public void setCallId(String callId) {
+        this.callId = callId;
     }
-}
 
-dependencies {
-    compile 'io.kamax:matrix-java-sdk:0.0.12-8-g6a22724'
-    compile 'org.springframework.boot:spring-boot-starter-web:2.0.1.RELEASE'
-    compile 'org.apache.commons:commons-collections4:4.1'
-    testCompile 'junit:junit:4.12'
-}
+    public Long getVersion() {
+        return version;
+    }
 
-repositories {
-    maven { url 'https://kamax.io/maven/snapshots/' }
-    maven { url 'https://kamax.io/maven/releases/' }
-    jcenter()
-}
+    public void setVersion(long version) {
+        this.version = version;
+    }
 
-bootJar {
-    launchScript()
+    public boolean isValid() {
+        return Objects.nonNull(callId) && Objects.nonNull(version);
+    }
+
+
 }

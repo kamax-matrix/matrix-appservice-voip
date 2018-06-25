@@ -18,34 +18,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-apply plugin: 'java'
-apply plugin: 'org.springframework.boot'
+package io.kamax.matrix.bridge.voip.remote;
 
-group = 'kamax.io'
+import io.kamax.matrix.bridge.voip.CallHangupEvent;
+import io.kamax.matrix.bridge.voip.CallInviteEvent;
 
-buildscript {
-    repositories {
-        jcenter()
-    }
+public interface RemoteListener {
 
-    dependencies {
-        classpath 'org.springframework.boot:spring-boot-gradle-plugin:2.0.1.RELEASE'
-    }
-}
+    void onCallCreate(RemoteEndpoint endpoint, String origin, CallInviteEvent ev);
 
-dependencies {
-    compile 'io.kamax:matrix-java-sdk:0.0.12-8-g6a22724'
-    compile 'org.springframework.boot:spring-boot-starter-web:2.0.1.RELEASE'
-    compile 'org.apache.commons:commons-collections4:4.1'
-    testCompile 'junit:junit:4.12'
-}
+    void onCallDestroy(RemoteEndpoint endpoint, CallHangupEvent ev);
 
-repositories {
-    maven { url 'https://kamax.io/maven/snapshots/' }
-    maven { url 'https://kamax.io/maven/releases/' }
-    jcenter()
-}
-
-bootJar {
-    launchScript()
 }
