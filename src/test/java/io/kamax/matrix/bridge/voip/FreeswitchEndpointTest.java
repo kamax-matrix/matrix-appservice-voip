@@ -1,6 +1,6 @@
 package io.kamax.matrix.bridge.voip;
 
-import io.kamax.matrix.bridge.voip.remote.call.FreeswitchEndpoint;
+import io.kamax.matrix.bridge.voip.remote.call.FreeswitchManager;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -11,18 +11,14 @@ import static org.junit.Assume.assumeTrue;
 
 public class FreeswitchEndpointTest {
 
-    private String wsUrl = System.getenv("FREESWITCH_VERTO_WS_URL");
-    private String wsLogin = System.getenv("FREESWITCH_VERTO_LOGIN");
-    private String wsPass = System.getenv("FREESWITCH_VERTO_PASS");
-
     @Before
     public void before() {
-        assumeTrue(Objects.nonNull(wsUrl));
+        assumeTrue(Objects.nonNull(System.getenv("FREESWITCH_TEST_ENABLED")));
     }
 
     @Test
     public void connect() throws InterruptedException {
-        FreeswitchEndpoint ep = new FreeswitchEndpoint(wsUrl, wsLogin, wsPass);
+        FreeswitchManager ep = new FreeswitchManager();
         assertTrue(!ep.isClosed());
         ep.close();
         assertTrue(ep.isClosed());

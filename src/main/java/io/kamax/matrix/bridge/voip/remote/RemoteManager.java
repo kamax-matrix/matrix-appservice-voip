@@ -20,8 +20,11 @@
 
 package io.kamax.matrix.bridge.voip.remote;
 
-import io.kamax.matrix.bridge.voip.*;
+import io.kamax.matrix.bridge.voip.CallHangupEvent;
+import io.kamax.matrix.bridge.voip.CallInviteEvent;
 import io.kamax.matrix.bridge.voip.remote.call.FreeswitchEndpoint;
+import io.kamax.matrix.bridge.voip.remote.call.FreeswitchListener;
+import io.kamax.matrix.bridge.voip.remote.call.FreeswitchManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -29,7 +32,6 @@ import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Component
@@ -37,55 +39,23 @@ public class RemoteManager {
 
     private final Logger log = LoggerFactory.getLogger(RemoteManager.class);
 
-    private String wsUrl = System.getenv("FREESWITCH_VERTO_WS_URL");
-    private String wsLogin = System.getenv("FREESWITCH_VERTO_LOGIN");
-    private String wsPass = System.getenv("FREESWITCH_VERTO_PASS");
-    private FreeswitchEndpoint as;
+    private FreeswitchManager as;
 
     private Map<String, RemoteEndpoint> endpoints = new ConcurrentHashMap<>();
-
     private List<RemoteListener> listeners = new ArrayList<>();
 
     public RemoteManager() {
-        as = new FreeswitchEndpoint(wsUrl, wsLogin, wsPass);
-        as.addListener(new CallListener() {
+        as = new FreeswitchManager();
+        as.addListener(new FreeswitchListener() {
 
             @Override
-            public void onInvite(String from, CallInviteEvent ev) {
-                log.info("Remote: Call {}: invite from {}", ev.getCallId(), from);
-
-                RemoteEndpoint endpoint = getEndpoint(from);
-                endpoints.put(ev.getCallId(), endpoint);
-                listeners.forEach(l -> l.onCallCreate(endpoint, from, ev));
-                endpoint.inject(from, ev);
+            public void onCallCreate(FreeswitchEndpoint endpoint, String origin, CallInviteEvent ev) {
+                listeners.forEach(l -> l.onCallCreate(getEndpoint(ev.getCallId()), origin, ev));
             }
 
             @Override
-            public void onCandidates(CallCandidatesEvent ev) {
-
-            }
-
-            @Override
-            public void onAnswer(CallAnswerEvent ev) {
-
-            }
-
-            @Override
-            public void onHangup(CallHangupEvent ev) {
-                log.info("Remote: Call {}: hangup", ev.getCallId());
-
-                RemoteEndpoint endpoint = endpoints.remove(ev.getCallId());
-                if (Objects.isNull(endpoint)) {
-                    log.info("Call {}: no endpoint", ev.getCallId());
-                    listeners.forEach(l -> l.onCallDestroy(getEndpoint(wsLogin), ev));
-                } else {
-                    endpoint.inject(ev);
-                }
-            }
-
-            @Override
-            public void onClose() {
-
+            public void onCallDestroy(FreeswitchEndpoint endpoint, CallHangupEvent ev) {
+                listeners.forEach(l -> l.onCallDestroy(getEndpoint(ev.getCallId()), ev));
             }
 
         });
@@ -95,8 +65,9 @@ public class RemoteManager {
         listeners.add(listener);
     }
 
-    public RemoteEndpoint getEndpoint(String remoteId) {
-        return new RemoteEndpoint(remoteId, as);
+    public RemoteEndpoint getEndpoint(String callId) {
+        log.info("Call {}: Creating endpoint", callId);
+        return endpoints.computeIfAbsent(callId, cId -> new RemoteEndpoint(as.getEndpoint(cId)));
     }
 
 }

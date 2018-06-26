@@ -58,7 +58,7 @@ public class Bridge {
 
             @Override
             public void onCallCreated(MatrixEndpoint epLocal, String destination, CallInviteEvent callEv) {
-                RemoteEndpoint epRemote = remote.getEndpoint(destination);
+                RemoteEndpoint epRemote = remote.getEndpoint(callEv.getCallId());
                 calls.put(callEv.getCallId(), new Call(callEv.getCallId(), epLocal, epRemote));
                 log.info("Call {}: created", callEv.getCallId());
             }

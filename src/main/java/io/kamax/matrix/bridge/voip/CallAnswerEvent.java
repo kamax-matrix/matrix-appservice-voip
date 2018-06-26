@@ -22,7 +22,17 @@ package io.kamax.matrix.bridge.voip;
 
 public class CallAnswerEvent extends CallEvent {
 
-    public class Answer {
+    public static CallAnswerEvent get(String callId, String sdp) {
+        Answer answer = new Answer();
+        answer.setType("answer");
+        answer.setSdp(sdp);
+        CallAnswerEvent ev = new CallAnswerEvent();
+        ev.setCallId(callId);
+        ev.setAnswer(answer);
+        return ev;
+    }
+
+    public static class Answer {
 
         private String type;
         private String sdp;
@@ -45,7 +55,7 @@ public class CallAnswerEvent extends CallEvent {
 
     }
 
-    private Answer answer;
+    private Answer answer = new Answer();
 
     public Answer getAnswer() {
         return answer;

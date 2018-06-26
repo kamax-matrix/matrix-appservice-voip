@@ -82,9 +82,9 @@ public class MatrixManager {
                 .setUserWithLocalpart(hsCfg.getLocalpart()));
     }
 
-    private Optional<Matcher> findMatcherForUser(_MatrixID mxId) {
+    private Optional<Matcher> findMatcherForUser(String localpart) {
         for (Pattern p : patterns) {
-            Matcher m = p.matcher(mxId.getLocalPart());
+            Matcher m = p.matcher(localpart);
             if (m.matches()) {
                 return Optional.of(m);
             }
@@ -93,9 +93,18 @@ public class MatrixManager {
         return Optional.empty();
     }
 
+    private Optional<Matcher> findMatcherForUser(_MatrixID mxId) {
+        if (!mxId.getDomain().equals(domain)) {
+            // Ignoring non-local user
+            return Optional.empty();
+        }
+
+        return findMatcherForUser(mxId.getLocalPart());
+    }
+
     public Optional<MatrixBridgeUser> findClientForUser(_MatrixID mxId) {
         return findMatcherForUser(mxId)
-                .map(m -> vMxUsers.computeIfAbsent(m.group(1), id -> new MatrixBridgeUser(as.getUser(mxId.getLocalPart()), id)));
+                .map(m -> vMxUsers.computeIfAbsent(m.group("remoteId"), id -> new MatrixBridgeUser(as.getUser(mxId.getLocalPart()), id)));
     }
 
     public HomeView forHome(String token) {
@@ -244,10 +253,11 @@ public class MatrixManager {
                             data.getOffer().getSdp()
                     );
 
-                    MatrixEndpoint mxCall = new MatrixEndpoint(vUser.getClient(), ev.getRoomId(), call.getCallId());
+                    MatrixEndpoint mxCall = new MatrixEndpoint(vUser, ev.getRoomId(), call.getCallId());
                     endpoints.put(data.getCallId(), mxCall);
                     listeners.forEach(l -> l.onCallCreated(mxCall, vUser.getRemoteId(), data));
                     mxCall.inject(data);
+
                 }
 
                 if ("m.call.candidates".equals(ev.getType())) {
@@ -304,9 +314,11 @@ public class MatrixManager {
         listeners.add(listener);
     }
 
-    public MatrixEndpoint getEndpoint(String user, String roomId, String callId) {
-        MatrixEndpoint endpoint = new MatrixEndpoint(as.getUser("_voip_" + user), roomId, callId);
+    public MatrixEndpoint getEndpoint(String userId, String roomId, String callId) {
+        MatrixBridgeUser user = findClientForUser(MatrixID.asAcceptable("_voip_" + userId, domain)).orElseThrow(IllegalArgumentException::new);
+        MatrixEndpoint endpoint = new MatrixEndpoint(user, roomId, callId);
         endpoints.put(callId, endpoint);
         return endpoint;
     }
+
 }

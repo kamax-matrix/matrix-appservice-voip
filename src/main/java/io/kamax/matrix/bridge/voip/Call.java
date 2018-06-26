@@ -49,8 +49,15 @@ public class Call {
             }
 
             @Override
+            public void onSdp(CallSdpEvent ev) {
+                // This should never happen
+                log.warn("We got Call SDP event from Matrix!");
+            }
+
+            @Override
             public void onCandidates(CallCandidatesEvent ev) {
                 log.info("Call {}: Matrix: candidates", id);
+                remote.handle(ev);
             }
 
             @Override
@@ -61,6 +68,7 @@ public class Call {
             @Override
             public void onHangup(CallHangupEvent ev) {
                 log.info("Call {}: Matrix: hangup", id);
+                remote.handle(ev);
                 terminate(ev.getReason());
             }
 
@@ -81,6 +89,12 @@ public class Call {
             }
 
             @Override
+            public void onSdp(CallSdpEvent ev) {
+                // This should never happen
+                log.warn("We got Call SDP event from Remote!");
+            }
+
+            @Override
             public void onCandidates(CallCandidatesEvent ev) {
                 log.info("Call {}: Remote: candidates", id);
             }
@@ -88,11 +102,13 @@ public class Call {
             @Override
             public void onAnswer(CallAnswerEvent ev) {
                 log.info("Call {}: Remote: answer", id);
+                local.handle(ev);
             }
 
             @Override
             public void onHangup(CallHangupEvent ev) {
                 log.info("Call {}: Remote: hangup", id);
+                local.handle(ev);
                 terminate(ev.getReason());
             }
 
@@ -110,7 +126,7 @@ public class Call {
         }
 
         log.info("Call {}: terminating", id);
-        local.handle(CallHangupEvent.forCall(id, reason));
+        local.handle(CallHangupEvent.from(id, reason));
         remote.close();
 
         local = null;

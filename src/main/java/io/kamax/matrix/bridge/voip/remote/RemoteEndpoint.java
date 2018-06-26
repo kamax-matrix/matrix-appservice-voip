@@ -20,10 +20,10 @@
 
 package io.kamax.matrix.bridge.voip.remote;
 
-import io.kamax.matrix.bridge.voip.CallHangupEvent;
-import io.kamax.matrix.bridge.voip.CallInviteEvent;
-import io.kamax.matrix.bridge.voip.CallListener;
+import io.kamax.matrix.bridge.voip.*;
 import io.kamax.matrix.bridge.voip.remote.call.FreeswitchEndpoint;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,27 +31,63 @@ import java.util.Objects;
 
 public class RemoteEndpoint {
 
-    private String remoteId;
+    private final Logger log = LoggerFactory.getLogger(RemoteEndpoint.class);
+
     private FreeswitchEndpoint voip;
 
     private List<CallListener> listeners = new ArrayList<>();
 
-    public RemoteEndpoint(String remoteId, FreeswitchEndpoint voip) {
-        this.remoteId = remoteId;
+    public RemoteEndpoint(FreeswitchEndpoint voip) {
         this.voip = voip;
+        this.voip.addListener(new CallListener() {
+
+            @Override
+            public void onInvite(String from, CallInviteEvent ev) {
+                log.info("Call {}: Remote: VoIP: Invite from {}", ev.getCallId(), from);
+                inject(from, ev);
+            }
+
+            @Override
+            public void onSdp(CallSdpEvent ev) {
+                // We shouldn't get this ever
+                log.warn("Call {}: Remote: VoIP: Got SDP event!", ev.getCallId());
+            }
+
+            @Override
+            public void onCandidates(CallCandidatesEvent ev) {
+                // FIXME support
+            }
+
+            @Override
+            public void onAnswer(CallAnswerEvent ev) {
+                log.info("Call {}: Remote: VoIP: Answer", ev.getCallId());
+                inject(ev);
+            }
+
+            @Override
+            public void onHangup(CallHangupEvent ev) {
+                inject(ev);
+            }
+
+            @Override
+            public void onClose() {
+                close();
+            }
+
+        });
     }
 
     void inject(String from, CallInviteEvent ev) {
         listeners.forEach(l -> l.onInvite(from, ev));
     }
 
+    void inject(CallAnswerEvent ev) {
+        listeners.forEach(l -> l.onAnswer(ev));
+    }
+
     void inject(CallHangupEvent ev) {
         listeners.forEach(l -> l.onHangup(ev));
         close();
-    }
-
-    public String getId() {
-        return remoteId;
     }
 
     public void addListener(CallListener listener) {
@@ -62,15 +98,19 @@ public class RemoteEndpoint {
         voip.handle(destination, ev);
     }
 
+    public void handle(CallCandidatesEvent ev) {
+        voip.handle(ev);
+    }
+
     public void handle(CallHangupEvent ev) {
         voip.handle(ev);
     }
 
-    public boolean isClosed() {
+    public synchronized boolean isClosed() {
         return Objects.isNull(voip);
     }
 
-    public void close() {
+    public synchronized void close() {
         if (isClosed()) {
             return;
         }

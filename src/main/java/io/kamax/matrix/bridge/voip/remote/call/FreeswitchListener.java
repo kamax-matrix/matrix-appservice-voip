@@ -18,29 +18,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package io.kamax.matrix.bridge.voip;
+package io.kamax.matrix.bridge.voip.remote.call;
 
-public class CallHangupEvent extends CallEvent {
+import io.kamax.matrix.bridge.voip.CallHangupEvent;
+import io.kamax.matrix.bridge.voip.CallInviteEvent;
 
-    public static CallHangupEvent from(String callId, String reason) {
-        CallHangupEvent ev = new CallHangupEvent();
-        ev.setCallId(callId);
-        ev.setReason(reason);
-        return ev;
-    }
+public interface FreeswitchListener {
 
-    /*
-    Known values on Matrix side:
-    - invite_timeout
-     */
-    private String reason;
+    void onCallCreate(FreeswitchEndpoint endpoint, String origin, CallInviteEvent ev);
 
-    public String getReason() {
-        return reason;
-    }
-
-    public void setReason(String reason) {
-        this.reason = reason;
-    }
+    void onCallDestroy(FreeswitchEndpoint endpoint, CallHangupEvent ev);
 
 }

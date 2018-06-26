@@ -25,6 +25,8 @@ import org.apache.commons.lang3.StringUtils;
 public enum VertoMethod {
 
     Invite("verto.invite"),
+    Media("verto.media"),
+    Answer("verto.answer"),
     Bye("verto.bye");
 
     private String id;

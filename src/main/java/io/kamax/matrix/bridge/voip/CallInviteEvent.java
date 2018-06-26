@@ -24,6 +24,17 @@ import java.util.Objects;
 
 public class CallInviteEvent extends CallEvent {
 
+    public static CallInviteEvent get(String callId, String sdp, long lifetime) {
+        Offer o = new Offer();
+        o.setType("invite");
+        o.setSdp(sdp);
+        CallInviteEvent ev = new CallInviteEvent();
+        ev.setCallId(callId);
+        ev.setOffer(o);
+        ev.setLifetime(lifetime);
+        return ev;
+    }
+
     public static class Offer {
 
         private String type;

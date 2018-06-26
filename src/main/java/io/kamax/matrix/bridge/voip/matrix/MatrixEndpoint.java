@@ -26,23 +26,26 @@ import io.kamax.matrix.json.GsonUtil;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class MatrixEndpoint {
 
     private _MatrixClient client;
     private String roomId;
     private String callId;
+    private String remoteId;
 
     private List<CallListener> listeners = new ArrayList<>();
 
-    public MatrixEndpoint(_MatrixClient client, String roomId, String callId) {
-        this.client = client;
+    public MatrixEndpoint(MatrixBridgeUser user, String roomId, String callId) {
+        this.client = user.getClient();
+        this.remoteId = user.getRemoteId();
         this.roomId = roomId;
         this.callId = callId;
     }
 
     void inject(CallInviteEvent ev) {
-        listeners.forEach(l -> l.onInvite(client.getWhoAmI().getId(), ev));
+        listeners.forEach(l -> l.onInvite(remoteId, ev));
     }
 
     void inject(CallCandidatesEvent ev) {
@@ -57,14 +60,6 @@ public class MatrixEndpoint {
         listeners.forEach(l -> l.onHangup(ev));
     }
 
-    public String getRoomId() {
-        return roomId;
-    }
-
-    public String getCallId() {
-        return callId;
-    }
-
     public void addListener(CallListener listener) {
         listeners.add(listener);
     }
@@ -74,12 +69,23 @@ public class MatrixEndpoint {
         client.getRoom(roomId).sendEvent("m.call.invite", GsonUtil.makeObj(ev));
     }
 
-    public void handle(CallHangupEvent evRemote) {
+    public void handle(CallAnswerEvent ev) {
+        ev.getAnswer().setType("answer");
+        client.getRoom(roomId).sendEvent("m.call.answer", GsonUtil.makeObj(ev));
+    }
+
+    public synchronized void handle(CallHangupEvent evRemote) {
+        if (Objects.isNull(client)) {
+            // we are already done
+            return;
+        }
         CallHangupEvent ev = new CallHangupEvent();
         ev.setCallId(evRemote.getCallId());
         ev.setVersion(0L);
         ev.setReason(evRemote.getReason());
         client.getRoom(roomId).sendEvent("m.call.hangup", GsonUtil.makeObj(ev));
+
+        client = null;
     }
 
 }

@@ -20,27 +20,23 @@
 
 package io.kamax.matrix.bridge.voip;
 
-public class CallHangupEvent extends CallEvent {
+public class CallSdpEvent extends CallEvent {
 
-    public static CallHangupEvent from(String callId, String reason) {
-        CallHangupEvent ev = new CallHangupEvent();
+    public static CallSdpEvent get(String callId, String sdp) {
+        CallSdpEvent ev = new CallSdpEvent();
         ev.setCallId(callId);
-        ev.setReason(reason);
+        ev.setSdp(sdp);
         return ev;
     }
 
-    /*
-    Known values on Matrix side:
-    - invite_timeout
-     */
-    private String reason;
+    private String sdp;
 
-    public String getReason() {
-        return reason;
+    public String getSdp() {
+        return sdp;
     }
 
-    public void setReason(String reason) {
-        this.reason = reason;
+    public void setSdp(String sdp) {
+        this.sdp = sdp;
     }
 
 }
