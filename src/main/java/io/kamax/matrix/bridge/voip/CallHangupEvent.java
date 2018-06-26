@@ -31,7 +31,8 @@ public class CallHangupEvent extends CallEvent {
 
     /*
     Known values on Matrix side:
-    - invite_timeout
+    - invite_timeout - Other side did not pickup within lifetime
+    - ice_failed - media connection error (generic - invalid SDP, or failure to negotiate with TURN, or just network error)
      */
     private String reason;
 

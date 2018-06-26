@@ -98,8 +98,9 @@ public class FreeswitchEndpoint {
     }
 
     void inject(CallSdpEvent ev) {
-        log.info("Call {}: Setting SDP", callId);
+        log.info("Call {}: Remote SDP:", callId);
         fsSdp = ev.getSdp();
+        log.info("{}", fsSdp);
     }
 
     void inject(CallAnswerEvent ev) {
@@ -119,7 +120,7 @@ public class FreeswitchEndpoint {
             log.info("Call {}: Invite: Adding call candidates", callId);
             candidates.forEach(c -> ev.getOffer().setSdp(ev.getOffer().getSdp() + c + "\r\n"));
 
-            log.info("Call {}: SDP:\n{}", callId, ev.getOffer().getSdp());
+            log.info("Call {}: Local SDP:\n{}", callId, ev.getOffer().getSdp());
 
             JsonObject dialogParams = new JsonObject();
             dialogParams.addProperty("callID", ev.getCallId());
@@ -137,9 +138,6 @@ public class FreeswitchEndpoint {
             if (Objects.nonNull(throwable)) {
                 log.info("Call {}: Invite to Freeswitch: FAIL", callId, ev.getCallId());
 
-                CallHangupEvent hEv = new CallHangupEvent();
-                hEv.setCallId(ev.getCallId());
-                hEv.setReason("Remote error");
                 if (throwable instanceof RpcException) {
                     RpcException rpcEx = (RpcException) throwable;
                     log.warn("Call {}: Failure from Freeswitch: {}", callId, rpcEx.getRaw());
@@ -147,7 +145,7 @@ public class FreeswitchEndpoint {
                     log.warn("Call {}: Failure from Freeswitch: {}", callId, throwable.getMessage());
                 }
 
-                listeners.forEach(l -> l.onHangup(hEv));
+                injectHangup("Remote Error");
             } else {
                 log.info("Call {}: Invite to Freeswitch: OK", callId, ev.getCallId());
             }
@@ -160,7 +158,36 @@ public class FreeswitchEndpoint {
     }
 
     public void handle(CallAnswerEvent ev) {
+        log.info("Call {}: Answer: Awaiting candidates", callId);
 
+        awaitCandidates().thenCompose(cList -> {
+            log.info("Call {}: Answer: Adding call candidates", callId);
+            candidates.forEach(c -> ev.getAnswer().setSdp(ev.getAnswer().getSdp() + c + "\r\n"));
+            log.info("Call {}: Local SDP:\n{}", callId, ev.getAnswer().getSdp());
+
+            JsonObject dialogParams = new JsonObject();
+            dialogParams.addProperty("callID", ev.getCallId());
+            JsonObject params = new JsonObject();
+            params.addProperty("sessId", sessionId);
+            params.add("dialogParams", dialogParams);
+            params.addProperty("sdp", ev.getAnswer().getSdp());
+
+            log.info("Call {}: Answer: Sending", callId);
+            return client.sendRequest(VertoMethod.Answer.getId(), params);
+        }).whenComplete((data, error) -> {
+            if (Objects.isNull(error)) {
+                log.info("Call {}: Freeswitch: Success", callId);
+                return;
+            }
+            if (error instanceof RpcException) {
+                RpcException rpcEx = (RpcException) error;
+                log.warn("Call {}: Freeswitch: Failure: {}", callId, rpcEx.getRaw());
+            } else {
+                log.warn("Call {}: Freeswitch: Failure: {}", callId, error.getMessage());
+            }
+
+            injectHangup("Remote Error");
+        });
     }
 
     public void handle(CallHangupEvent ev) {
@@ -189,12 +216,26 @@ public class FreeswitchEndpoint {
         return Objects.isNull(client);
     }
 
+    private void injectHangup(String reason) {
+        if (isClosed()) {
+            return;
+        }
+
+        CallHangupEvent ev = new CallHangupEvent();
+        ev.setCallId(callId);
+        if (Objects.nonNull(reason)) {
+            ev.setReason(reason);
+        }
+        listeners.forEach(l -> l.onHangup(ev));
+    }
+
     public synchronized void close() {
         if (isClosed()) {
             return;
         }
 
         client = null;
+        injectHangup(null);
     }
 
 }

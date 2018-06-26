@@ -20,8 +20,7 @@
 
 package io.kamax.matrix.bridge.voip.remote;
 
-import io.kamax.matrix.bridge.voip.CallHangupEvent;
-import io.kamax.matrix.bridge.voip.CallInviteEvent;
+import io.kamax.matrix.bridge.voip.*;
 import io.kamax.matrix.bridge.voip.remote.call.FreeswitchEndpoint;
 import io.kamax.matrix.bridge.voip.remote.call.FreeswitchListener;
 import io.kamax.matrix.bridge.voip.remote.call.FreeswitchManager;
@@ -67,7 +66,42 @@ public class RemoteManager {
 
     public RemoteEndpoint getEndpoint(String callId) {
         log.info("Call {}: Creating endpoint", callId);
-        return endpoints.computeIfAbsent(callId, cId -> new RemoteEndpoint(as.getEndpoint(cId)));
+        return endpoints.computeIfAbsent(callId, cId -> {
+            RemoteEndpoint endpoint = new RemoteEndpoint(as.getEndpoint(cId));
+            endpoint.addListener(new CallListener() { // FIXME do better
+                @Override
+                public void onInvite(String from, CallInviteEvent ev) {
+
+                }
+
+                @Override
+                public void onSdp(CallSdpEvent ev) {
+
+                }
+
+                @Override
+                public void onCandidates(CallCandidatesEvent ev) {
+
+                }
+
+                @Override
+                public void onAnswer(CallAnswerEvent ev) {
+
+                }
+
+                @Override
+                public void onHangup(CallHangupEvent ev) {
+
+                }
+
+                @Override
+                public void onClose() {
+                    log.info("Removing endpoint for Call {}: closed", callId);
+                    endpoints.remove(callId);
+                }
+            });
+            return endpoint;
+        });
     }
 
 }

@@ -21,10 +21,7 @@
 package io.kamax.matrix.bridge.voip.remote.call;
 
 import com.google.gson.JsonObject;
-import io.kamax.matrix.bridge.voip.CallAnswerEvent;
-import io.kamax.matrix.bridge.voip.CallHangupEvent;
-import io.kamax.matrix.bridge.voip.CallInviteEvent;
-import io.kamax.matrix.bridge.voip.CallSdpEvent;
+import io.kamax.matrix.bridge.voip.*;
 import io.kamax.matrix.json.GsonUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -103,9 +100,11 @@ public class FreeswitchManager {
 
                     if (VertoMethod.Bye.matches(method)) {
                         String callId = GsonUtil.getStringOrThrow(params, "callID");
+                        String cause = GsonUtil.getStringOrNull(params, "cause");
+                        if ("ORIGINATOR_CANCEL".equals(cause) || "NORMAL_CLEARING".equals(cause)) cause = null;
                         getEndpoint(callId).inject(CallHangupEvent.from(
                                 callId,
-                                GsonUtil.getStringOrNull(params, "cause")
+                                cause
                         ));
                     }
                 }
@@ -136,7 +135,42 @@ public class FreeswitchManager {
     }
 
     public FreeswitchEndpoint getEndpoint(String callId) {
-        return endpoints.computeIfAbsent(callId, cId -> new FreeswitchEndpoint(id, cId, client, sessionId));
+        return endpoints.computeIfAbsent(callId, cId -> {
+            FreeswitchEndpoint endpoint = new FreeswitchEndpoint(id, cId, client, sessionId);
+            endpoint.addListener(new CallListener() { // FIXME do better
+                @Override
+                public void onInvite(String from, CallInviteEvent ev) {
+
+                }
+
+                @Override
+                public void onSdp(CallSdpEvent ev) {
+
+                }
+
+                @Override
+                public void onCandidates(CallCandidatesEvent ev) {
+
+                }
+
+                @Override
+                public void onAnswer(CallAnswerEvent ev) {
+
+                }
+
+                @Override
+                public void onHangup(CallHangupEvent ev) {
+
+                }
+
+                @Override
+                public void onClose() {
+                    log.info("Removing endpoint for Call {}: closed", callId);
+                    endpoints.remove(callId);
+                }
+            });
+            return endpoint;
+        });
     }
 
     public synchronized void close() {

@@ -63,6 +63,7 @@ public class Call {
             @Override
             public void onAnswer(CallAnswerEvent ev) {
                 log.info("Call {}: Matrix: answer", id);
+                remote.handle(ev);
             }
 
             @Override

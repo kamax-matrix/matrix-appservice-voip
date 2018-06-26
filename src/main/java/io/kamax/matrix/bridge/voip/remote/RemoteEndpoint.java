@@ -102,6 +102,10 @@ public class RemoteEndpoint {
         voip.handle(ev);
     }
 
+    public void handle(CallAnswerEvent ev) {
+        voip.handle(ev);
+    }
+
     public void handle(CallHangupEvent ev) {
         voip.handle(ev);
     }

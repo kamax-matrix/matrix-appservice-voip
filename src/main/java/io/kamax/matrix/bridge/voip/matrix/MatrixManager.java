@@ -234,21 +234,22 @@ public class MatrixManager {
                     log.info("Call {}: invite {}", call.getCallId(), vUser.getRemoteId());
                     CallInviteEvent data = GsonUtil.get().fromJson(content, CallInviteEvent.class);
                     if (!data.isValid()) {
-                        log.warn("Ignoring call event: invalid");
+                        log.warn("Call {}: Ignoring: Invalid", call.getCallId());
                         return;
                     }
 
                     long age = GsonUtil.findLong(ev.getJson(), "age").orElse(0L);
                     Instant ts = Instant.now().minus(age, ChronoUnit.MILLIS);
                     Instant expiredAt = ts.plus(data.getLifetime(), ChronoUnit.MILLIS);
-                    log.info("Call from {} expiring in {} ({})", ts, data.getLifetime(), expiredAt);
+                    log.info("Call {}: From {} expiring in {} ({})", call.getCallId(), ts, data.getLifetime(), expiredAt);
                     if (expiredAt.isBefore(Instant.now())) {
-                        log.info("Call expired");
+                        log.info("Call {}: Expired", call.getCallId());
                         return;
                     }
 
                     log.info(
-                            "Call type {} with SDP:\n{}",
+                            "Call {}: Type {} with SDP:\n{}",
+                            call.getCallId(),
                             data.getOffer().getType(),
                             data.getOffer().getSdp()
                     );
@@ -263,11 +264,10 @@ public class MatrixManager {
                 if ("m.call.candidates".equals(ev.getType())) {
                     log.info("Call {}: candidates", call.getCallId());
                     CallCandidatesEvent data = GsonUtil.get().fromJson(content, CallCandidatesEvent.class);
-                    log.info("Got {} new candidates", data.getCandidates().size());
 
                     MatrixEndpoint mxCall = endpoints.get(call.getCallId());
                     if (Objects.isNull(mxCall)) {
-                        log.warn("Unknown call, ignoring");
+                        log.warn("Call {}: Unknown, ignoring", call.getCallId());
                         return;
                     }
 
@@ -317,6 +317,38 @@ public class MatrixManager {
     public MatrixEndpoint getEndpoint(String userId, String roomId, String callId) {
         MatrixBridgeUser user = findClientForUser(MatrixID.asAcceptable("_voip_" + userId, domain)).orElseThrow(IllegalArgumentException::new);
         MatrixEndpoint endpoint = new MatrixEndpoint(user, roomId, callId);
+        endpoint.addListener(new CallListener() { // FIXME do better
+            @Override
+            public void onInvite(String from, CallInviteEvent ev) {
+
+            }
+
+            @Override
+            public void onSdp(CallSdpEvent ev) {
+
+            }
+
+            @Override
+            public void onCandidates(CallCandidatesEvent ev) {
+
+            }
+
+            @Override
+            public void onAnswer(CallAnswerEvent ev) {
+
+            }
+
+            @Override
+            public void onHangup(CallHangupEvent ev) {
+
+            }
+
+            @Override
+            public void onClose() {
+                log.info("Removing endpoint for Call {}: closed", callId);
+                endpoints.remove(callId);
+            }
+        });
         endpoints.put(callId, endpoint);
         return endpoint;
     }
