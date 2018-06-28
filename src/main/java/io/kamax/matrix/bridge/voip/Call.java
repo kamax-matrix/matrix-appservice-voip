@@ -127,7 +127,7 @@ public class Call {
         }
 
         log.info("Call {}: terminating", id);
-        local.handle(CallHangupEvent.from(id, reason));
+        local.close();
         remote.close();
 
         local = null;

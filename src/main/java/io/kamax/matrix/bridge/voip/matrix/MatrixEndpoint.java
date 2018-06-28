@@ -44,6 +44,22 @@ public class MatrixEndpoint {
         this.callId = callId;
     }
 
+    private void ifOpen(Runnable r) {
+        if (Objects.isNull(client)) {
+            return;
+        }
+
+        r.run();
+    }
+
+    private void ifOpenOrHangup(Runnable r) {
+        try {
+            ifOpen(r);
+        } catch (RuntimeException ex) {
+            close(CallHangupEvent.from(callId, ex.getMessage()));
+        }
+    }
+
     void inject(CallInviteEvent ev) {
         listeners.forEach(l -> l.onInvite(remoteId, ev));
     }
@@ -65,27 +81,38 @@ public class MatrixEndpoint {
     }
 
     public void handle(CallInviteEvent ev) {
-        ev.getOffer().setType("offer");
-        client.getRoom(roomId).sendEvent("m.call.invite", GsonUtil.makeObj(ev));
+        ifOpenOrHangup(() -> {
+            ev.getOffer().setType("offer");
+            client.getRoom(roomId).sendEvent("m.call.invite", GsonUtil.makeObj(ev));
+        });
     }
 
     public void handle(CallAnswerEvent ev) {
-        ev.getAnswer().setType("answer");
-        client.getRoom(roomId).sendEvent("m.call.answer", GsonUtil.makeObj(ev));
+        ifOpenOrHangup(() -> {
+            ev.getAnswer().setType("answer");
+            client.getRoom(roomId).sendEvent("m.call.answer", GsonUtil.makeObj(ev));
+        });
     }
 
-    public synchronized void handle(CallHangupEvent evRemote) {
-        if (Objects.isNull(client)) {
-            // we are already done
-            return;
-        }
-        CallHangupEvent ev = new CallHangupEvent();
-        ev.setCallId(evRemote.getCallId());
-        ev.setVersion(0L);
-        ev.setReason(evRemote.getReason());
-        client.getRoom(roomId).sendEvent("m.call.hangup", GsonUtil.makeObj(ev));
+    public void handle(CallHangupEvent evRemote) {
+        close(evRemote);
+    }
 
-        client = null;
+    private synchronized void close(CallHangupEvent ev) {
+        ifOpen(() -> {
+            try {
+                client.getRoom(roomId).sendEvent("m.call.hangup", GsonUtil.makeObj(CallHangupEvent.from(ev.getCallId(), ev.getReason())));
+            } catch (RuntimeException e) {
+                // TODO possibly report this as warning?
+            } finally {
+                client = null;
+                listeners.forEach(CallListener::onClose);
+            }
+        });
+    }
+
+    public void close() {
+        close(CallHangupEvent.from(callId, null));
     }
 
 }

@@ -24,6 +24,7 @@ public class CallHangupEvent extends CallEvent {
 
     public static CallHangupEvent from(String callId, String reason) {
         CallHangupEvent ev = new CallHangupEvent();
+        ev.setVersion(0);
         ev.setCallId(callId);
         ev.setReason(reason);
         return ev;
