@@ -23,6 +23,7 @@ package io.kamax.matrix.bridge.voip;
 import io.kamax.matrix.bridge.voip.matrix.MatrixEndpoint;
 import io.kamax.matrix.bridge.voip.matrix.MatrixListener;
 import io.kamax.matrix.bridge.voip.matrix.MatrixManager;
+import io.kamax.matrix.bridge.voip.matrix.event.CallInviteEvent;
 import io.kamax.matrix.bridge.voip.remote.RemoteEndpoint;
 import io.kamax.matrix.bridge.voip.remote.RemoteListener;
 import io.kamax.matrix.bridge.voip.remote.RemoteManager;
@@ -52,26 +53,30 @@ public class Bridge {
         this.remote = remote;
     }
 
+    private void closeCall(String id) {
+        Call call = calls.remove(id);
+        if (Objects.nonNull(call)) {
+            call.terminate();
+            log.info("Call {}: destroyed", id);
+        } else {
+            log.info("Call {}: destruction ignored", id);
+        }
+    }
+
     @EventListener
     public void onStart(ApplicationStartedEvent ev) {
         matrix.addListener(new MatrixListener() {
 
             @Override
             public void onCallCreated(MatrixEndpoint epLocal, String destination, CallInviteEvent callEv) {
-                RemoteEndpoint epRemote = remote.getEndpoint(callEv.getCallId());
+                RemoteEndpoint epRemote = remote.getEndpoint(callEv.getCallId(), epLocal.getChannelId(), destination);
                 calls.put(callEv.getCallId(), new Call(callEv.getCallId(), epLocal, epRemote));
                 log.info("Call {}: created", callEv.getCallId());
             }
 
             @Override
-            public void onCallDestroyed(MatrixEndpoint endpoint, CallHangupEvent callEv) {
-                Call call = calls.remove(callEv.getCallId());
-                if (Objects.nonNull(call)) {
-                    call.terminate();
-                    log.info("Call {}: destroyed", callEv.getCallId());
-                } else {
-                    log.info("Call {}: destruction ignored", callEv.getCallId());
-                }
+            public void onCallDestroyed(String id) {
+                closeCall(id);
             }
 
         });
@@ -86,14 +91,8 @@ public class Bridge {
             }
 
             @Override
-            public void onCallDestroy(RemoteEndpoint endpoint, CallHangupEvent ev) {
-                Call call = calls.remove(ev.getCallId());
-                if (Objects.nonNull(call)) {
-                    call.terminate();
-                    log.info("Call {}: destroyed", ev.getCallId());
-                } else {
-                    log.info("Call {}: destruction ignored", ev.getCallId());
-                }
+            public void onCallDestroy(String id) {
+                closeCall(id);
             }
 
         });

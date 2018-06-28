@@ -20,7 +20,7 @@
 
 package io.kamax.matrix.bridge.voip.remote;
 
-import io.kamax.matrix.bridge.voip.*;
+import io.kamax.matrix.bridge.voip.matrix.event.CallInviteEvent;
 import io.kamax.matrix.bridge.voip.remote.call.FreeswitchEndpoint;
 import io.kamax.matrix.bridge.voip.remote.call.FreeswitchListener;
 import io.kamax.matrix.bridge.voip.remote.call.FreeswitchManager;
@@ -49,12 +49,12 @@ public class RemoteManager {
 
             @Override
             public void onCallCreate(FreeswitchEndpoint endpoint, String origin, CallInviteEvent ev) {
-                listeners.forEach(l -> l.onCallCreate(getEndpoint(ev.getCallId()), origin, ev));
+                listeners.forEach(l -> l.onCallCreate(getEndpoint(ev.getCallId(), endpoint.getChannelId(), endpoint.getUserId()), origin, ev));
             }
 
             @Override
-            public void onCallDestroy(FreeswitchEndpoint endpoint, CallHangupEvent ev) {
-                listeners.forEach(l -> l.onCallDestroy(getEndpoint(ev.getCallId()), ev));
+            public void onCallDestroy(String id) {
+                listeners.forEach(l -> l.onCallDestroy(id));
             }
 
         });
@@ -64,41 +64,13 @@ public class RemoteManager {
         listeners.add(listener);
     }
 
-    public RemoteEndpoint getEndpoint(String callId) {
+    public RemoteEndpoint getEndpoint(String callId, String channelId, String userId) {
         log.info("Call {}: Creating endpoint", callId);
         return endpoints.computeIfAbsent(callId, cId -> {
-            RemoteEndpoint endpoint = new RemoteEndpoint(as.getEndpoint(cId));
-            endpoint.addListener(new CallListener() { // FIXME do better
-                @Override
-                public void onInvite(String from, CallInviteEvent ev) {
-
-                }
-
-                @Override
-                public void onSdp(CallSdpEvent ev) {
-
-                }
-
-                @Override
-                public void onCandidates(CallCandidatesEvent ev) {
-
-                }
-
-                @Override
-                public void onAnswer(CallAnswerEvent ev) {
-
-                }
-
-                @Override
-                public void onHangup(CallHangupEvent ev) {
-
-                }
-
-                @Override
-                public void onClose() {
-                    log.info("Removing endpoint for Call {}: closed", callId);
-                    endpoints.remove(callId);
-                }
+            RemoteEndpoint endpoint = new RemoteEndpoint(as.getEndpoint(cId), callId, channelId, userId);
+            endpoint.addListener(() -> {
+                log.info("Removing endpoint for Call {}: closed", callId);
+                endpoints.remove(callId);
             });
             return endpoint;
         });

@@ -20,13 +20,12 @@
 
 package io.kamax.matrix.bridge.voip.matrix;
 
-import io.kamax.matrix.bridge.voip.CallHangupEvent;
-import io.kamax.matrix.bridge.voip.CallInviteEvent;
+import io.kamax.matrix.bridge.voip.matrix.event.CallInviteEvent;
 
 public interface MatrixListener {
 
     void onCallCreated(MatrixEndpoint call, String destination, CallInviteEvent ev);
 
-    void onCallDestroyed(MatrixEndpoint call, CallHangupEvent ev);
+    void onCallDestroyed(String id);
 
 }

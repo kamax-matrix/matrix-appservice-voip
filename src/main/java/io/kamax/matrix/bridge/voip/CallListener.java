@@ -20,6 +20,11 @@
 
 package io.kamax.matrix.bridge.voip;
 
+import io.kamax.matrix.bridge.voip.matrix.event.CallAnswerEvent;
+import io.kamax.matrix.bridge.voip.matrix.event.CallCandidatesEvent;
+import io.kamax.matrix.bridge.voip.matrix.event.CallHangupEvent;
+import io.kamax.matrix.bridge.voip.matrix.event.CallInviteEvent;
+
 public interface CallListener {
 
     void onInvite(String from, CallInviteEvent ev);
@@ -31,7 +36,5 @@ public interface CallListener {
     void onAnswer(CallAnswerEvent ev);
 
     void onHangup(CallHangupEvent ev);
-
-    void onClose();
 
 }

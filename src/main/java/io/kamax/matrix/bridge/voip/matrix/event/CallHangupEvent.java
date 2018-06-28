@@ -18,34 +18,31 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package io.kamax.matrix.bridge.voip;
+package io.kamax.matrix.bridge.voip.matrix.event;
 
-import java.util.Objects;
+public class CallHangupEvent extends CallEvent {
 
-public class CallEvent {
-
-    private String callId;
-    private Long version;
-
-    public String getCallId() {
-        return callId;
+    public static CallHangupEvent from(String callId, String reason) {
+        CallHangupEvent ev = new CallHangupEvent();
+        ev.setVersion(0);
+        ev.setCallId(callId);
+        ev.setReason(reason);
+        return ev;
     }
 
-    public void setCallId(String callId) {
-        this.callId = callId;
+    /*
+    Known values on Matrix side:
+    - invite_timeout - Other side did not pickup within lifetime
+    - ice_failed - media connection error (generic - invalid SDP, or failure to negotiate with TURN, or just network error)
+     */
+    private String reason;
+
+    public String getReason() {
+        return reason;
     }
 
-    public Long getVersion() {
-        return version;
+    public void setReason(String reason) {
+        this.reason = reason;
     }
-
-    public void setVersion(long version) {
-        this.version = version;
-    }
-
-    public boolean isValid() {
-        return Objects.nonNull(callId) && Objects.nonNull(version);
-    }
-
 
 }

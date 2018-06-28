@@ -20,29 +20,16 @@
 
 package io.kamax.matrix.bridge.voip;
 
-public class CallHangupEvent extends CallEvent {
+public interface Endpoint {
 
-    public static CallHangupEvent from(String callId, String reason) {
-        CallHangupEvent ev = new CallHangupEvent();
-        ev.setVersion(0);
-        ev.setCallId(callId);
-        ev.setReason(reason);
-        return ev;
-    }
+    String getCallId();
 
-    /*
-    Known values on Matrix side:
-    - invite_timeout - Other side did not pickup within lifetime
-    - ice_failed - media connection error (generic - invalid SDP, or failure to negotiate with TURN, or just network error)
-     */
-    private String reason;
+    String getChannelId();
 
-    public String getReason() {
-        return reason;
-    }
+    String getUserId();
 
-    public void setReason(String reason) {
-        this.reason = reason;
-    }
+    void addListener(EndpointListener listener);
+
+    void addListener(CallListener listener);
 
 }

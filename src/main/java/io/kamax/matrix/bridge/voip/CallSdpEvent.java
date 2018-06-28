@@ -20,6 +20,8 @@
 
 package io.kamax.matrix.bridge.voip;
 
+import io.kamax.matrix.bridge.voip.matrix.event.CallEvent;
+
 public class CallSdpEvent extends CallEvent {
 
     public static CallSdpEvent get(String callId, String sdp) {

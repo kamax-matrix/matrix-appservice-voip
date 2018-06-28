@@ -18,14 +18,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package io.kamax.matrix.bridge.voip.remote;
+package io.kamax.matrix.bridge.voip;
 
-import io.kamax.matrix.bridge.voip.matrix.event.CallInviteEvent;
+public interface EndpointListener {
 
-public interface RemoteListener {
-
-    void onCallCreate(RemoteEndpoint endpoint, String origin, CallInviteEvent ev);
-
-    void onCallDestroy(String id);
+    void onClose();
 
 }

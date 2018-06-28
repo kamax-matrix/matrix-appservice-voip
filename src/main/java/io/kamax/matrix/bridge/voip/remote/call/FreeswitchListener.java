@@ -20,13 +20,12 @@
 
 package io.kamax.matrix.bridge.voip.remote.call;
 
-import io.kamax.matrix.bridge.voip.CallHangupEvent;
-import io.kamax.matrix.bridge.voip.CallInviteEvent;
+import io.kamax.matrix.bridge.voip.matrix.event.CallInviteEvent;
 
 public interface FreeswitchListener {
 
     void onCallCreate(FreeswitchEndpoint endpoint, String origin, CallInviteEvent ev);
 
-    void onCallDestroy(FreeswitchEndpoint endpoint, CallHangupEvent ev);
+    void onCallDestroy(String id);
 
 }

@@ -21,7 +21,10 @@
 package io.kamax.matrix.bridge.voip.remote.call;
 
 import com.google.gson.JsonObject;
-import io.kamax.matrix.bridge.voip.*;
+import io.kamax.matrix.bridge.voip.CallSdpEvent;
+import io.kamax.matrix.bridge.voip.matrix.event.CallAnswerEvent;
+import io.kamax.matrix.bridge.voip.matrix.event.CallHangupEvent;
+import io.kamax.matrix.bridge.voip.matrix.event.CallInviteEvent;
 import io.kamax.matrix.json.GsonUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -137,37 +140,9 @@ public class FreeswitchManager {
     public FreeswitchEndpoint getEndpoint(String callId) {
         return endpoints.computeIfAbsent(callId, cId -> {
             FreeswitchEndpoint endpoint = new FreeswitchEndpoint(id, cId, client, sessionId);
-            endpoint.addListener(new CallListener() { // FIXME do better
-                @Override
-                public void onInvite(String from, CallInviteEvent ev) {
-
-                }
-
-                @Override
-                public void onSdp(CallSdpEvent ev) {
-
-                }
-
-                @Override
-                public void onCandidates(CallCandidatesEvent ev) {
-
-                }
-
-                @Override
-                public void onAnswer(CallAnswerEvent ev) {
-
-                }
-
-                @Override
-                public void onHangup(CallHangupEvent ev) {
-
-                }
-
-                @Override
-                public void onClose() {
-                    log.info("Removing endpoint for Call {}: closed", callId);
-                    endpoints.remove(callId);
-                }
+            endpoint.addListener(() -> {
+                log.info("Removing endpoint for Call {}: closed", callId);
+                endpoints.remove(callId);
             });
             return endpoint;
         });

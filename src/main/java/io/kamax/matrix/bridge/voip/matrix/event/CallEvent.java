@@ -18,14 +18,34 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package io.kamax.matrix.bridge.voip.remote;
+package io.kamax.matrix.bridge.voip.matrix.event;
 
-import io.kamax.matrix.bridge.voip.matrix.event.CallInviteEvent;
+import java.util.Objects;
 
-public interface RemoteListener {
+public class CallEvent {
 
-    void onCallCreate(RemoteEndpoint endpoint, String origin, CallInviteEvent ev);
+    private String callId;
+    private Long version;
 
-    void onCallDestroy(String id);
+    public String getCallId() {
+        return callId;
+    }
+
+    public void setCallId(String callId) {
+        this.callId = callId;
+    }
+
+    public Long getVersion() {
+        return version;
+    }
+
+    public void setVersion(long version) {
+        this.version = version;
+    }
+
+    public boolean isValid() {
+        return Objects.nonNull(callId) && Objects.nonNull(version);
+    }
+
 
 }

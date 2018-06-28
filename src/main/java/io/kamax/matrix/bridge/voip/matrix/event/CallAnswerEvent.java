@@ -18,7 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package io.kamax.matrix.bridge.voip;
+package io.kamax.matrix.bridge.voip.matrix.event;
 
 public class CallAnswerEvent extends CallEvent {
 

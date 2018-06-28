@@ -21,6 +21,10 @@
 package io.kamax.matrix.bridge.voip;
 
 import io.kamax.matrix.bridge.voip.matrix.MatrixEndpoint;
+import io.kamax.matrix.bridge.voip.matrix.event.CallAnswerEvent;
+import io.kamax.matrix.bridge.voip.matrix.event.CallCandidatesEvent;
+import io.kamax.matrix.bridge.voip.matrix.event.CallHangupEvent;
+import io.kamax.matrix.bridge.voip.matrix.event.CallInviteEvent;
 import io.kamax.matrix.bridge.voip.remote.RemoteEndpoint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -72,13 +76,10 @@ public class Call {
                 remote.handle(ev);
                 terminate(ev.getReason());
             }
-
-            @Override
-            public void onClose() {
-                log.info("Call {}: Matrix: close", id);
-                terminate();
-            }
-
+        });
+        this.local.addListener(() -> {
+            log.info("Call {}: Matrix: close", id);
+            terminate();
         });
 
         this.remote.addListener(new CallListener() {
@@ -112,12 +113,10 @@ public class Call {
                 local.handle(ev);
                 terminate(ev.getReason());
             }
-
-            @Override
-            public void onClose() {
-                log.info("Call {}: Remote: close", id);
-                terminate();
-            }
+        });
+        this.remote.addListener(() -> {
+            log.info("Call {}: Remote: close", id);
+            terminate();
         });
     }
 

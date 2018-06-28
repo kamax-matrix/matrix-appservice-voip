@@ -25,9 +25,11 @@ import io.kamax.matrix.MatrixID;
 import io.kamax.matrix.MatrixIdCodec;
 import io.kamax.matrix._MatrixID;
 import io.kamax.matrix._MatrixUserProfile;
-import io.kamax.matrix.bridge.voip.*;
+import io.kamax.matrix.bridge.voip.HomeView;
+import io.kamax.matrix.bridge.voip.IdentityView;
 import io.kamax.matrix.bridge.voip.config.EntityTemplateConfig;
 import io.kamax.matrix.bridge.voip.config.HomeserverConfig;
+import io.kamax.matrix.bridge.voip.matrix.event.*;
 import io.kamax.matrix.client.MatrixClientContext;
 import io.kamax.matrix.client._MatrixClient;
 import io.kamax.matrix.client.as.MatrixApplicationServiceClient;
@@ -299,7 +301,7 @@ public class MatrixManager {
                     }
 
                     mxCall.inject(data);
-                    listeners.forEach(l -> l.onCallDestroyed(mxCall, data));
+                    listeners.forEach(l -> l.onCallDestroyed(call.getCallId()));
                 }
             }
 
@@ -317,37 +319,9 @@ public class MatrixManager {
     public MatrixEndpoint getEndpoint(String userId, String roomId, String callId) {
         MatrixBridgeUser user = findClientForUser(MatrixID.asAcceptable("_voip_" + userId, domain)).orElseThrow(IllegalArgumentException::new);
         MatrixEndpoint endpoint = new MatrixEndpoint(user, roomId, callId);
-        endpoint.addListener(new CallListener() { // FIXME do better
-            @Override
-            public void onInvite(String from, CallInviteEvent ev) {
-
-            }
-
-            @Override
-            public void onSdp(CallSdpEvent ev) {
-
-            }
-
-            @Override
-            public void onCandidates(CallCandidatesEvent ev) {
-
-            }
-
-            @Override
-            public void onAnswer(CallAnswerEvent ev) {
-
-            }
-
-            @Override
-            public void onHangup(CallHangupEvent ev) {
-
-            }
-
-            @Override
-            public void onClose() {
-                log.info("Removing endpoint for Call {}: closed", callId);
-                endpoints.remove(callId);
-            }
+        endpoint.addListener(() -> {
+            log.info("Removing endpoint for Call {}: closed", callId);
+            endpoints.remove(callId);
         });
         endpoints.put(callId, endpoint);
         return endpoint;

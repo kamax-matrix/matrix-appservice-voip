@@ -20,25 +20,31 @@
 
 package io.kamax.matrix.bridge.voip.remote;
 
-import io.kamax.matrix.bridge.voip.*;
+import io.kamax.matrix.bridge.voip.CallListener;
+import io.kamax.matrix.bridge.voip.CallSdpEvent;
+import io.kamax.matrix.bridge.voip.EndpointListener;
+import io.kamax.matrix.bridge.voip.GenericEndpoint;
+import io.kamax.matrix.bridge.voip.matrix.event.CallAnswerEvent;
+import io.kamax.matrix.bridge.voip.matrix.event.CallCandidatesEvent;
+import io.kamax.matrix.bridge.voip.matrix.event.CallHangupEvent;
+import io.kamax.matrix.bridge.voip.matrix.event.CallInviteEvent;
 import io.kamax.matrix.bridge.voip.remote.call.FreeswitchEndpoint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
 
-public class RemoteEndpoint {
+public class RemoteEndpoint extends GenericEndpoint {
 
     private final Logger log = LoggerFactory.getLogger(RemoteEndpoint.class);
 
     private FreeswitchEndpoint voip;
 
-    private List<CallListener> listeners = new ArrayList<>();
+    public RemoteEndpoint(FreeswitchEndpoint voip, String callId, String channelId, String userId) {
+        super(callId, channelId, userId);
 
-    public RemoteEndpoint(FreeswitchEndpoint voip) {
         this.voip = voip;
+        this.voip.addListener(this::close); // Endpoint Listener
         this.voip.addListener(new CallListener() {
 
             @Override
@@ -69,29 +75,21 @@ public class RemoteEndpoint {
                 inject(ev);
             }
 
-            @Override
-            public void onClose() {
-                close();
-            }
-
         });
+
     }
 
     void inject(String from, CallInviteEvent ev) {
-        listeners.forEach(l -> l.onInvite(from, ev));
+        fireCallEvent(l -> l.onInvite(from, ev));
     }
 
     void inject(CallAnswerEvent ev) {
-        listeners.forEach(l -> l.onAnswer(ev));
+        fireCallEvent(l -> l.onAnswer(ev));
     }
 
     void inject(CallHangupEvent ev) {
-        listeners.forEach(l -> l.onHangup(ev));
+        fireHangupEvent(ev.getReason());
         close();
-    }
-
-    public void addListener(CallListener listener) {
-        listeners.add(listener);
     }
 
     public void handle(String destination, CallInviteEvent ev) {
@@ -120,7 +118,7 @@ public class RemoteEndpoint {
         }
 
         voip = null;
-        listeners.forEach(CallListener::onClose);
+        fireEndpointEvent(EndpointListener::onClose);
     }
 
 }

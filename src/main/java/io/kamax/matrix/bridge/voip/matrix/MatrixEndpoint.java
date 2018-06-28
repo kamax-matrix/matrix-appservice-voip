@@ -20,28 +20,24 @@
 
 package io.kamax.matrix.bridge.voip.matrix;
 
-import io.kamax.matrix.bridge.voip.*;
+import io.kamax.matrix.bridge.voip.EndpointListener;
+import io.kamax.matrix.bridge.voip.GenericEndpoint;
+import io.kamax.matrix.bridge.voip.matrix.event.CallAnswerEvent;
+import io.kamax.matrix.bridge.voip.matrix.event.CallCandidatesEvent;
+import io.kamax.matrix.bridge.voip.matrix.event.CallHangupEvent;
+import io.kamax.matrix.bridge.voip.matrix.event.CallInviteEvent;
 import io.kamax.matrix.client._MatrixClient;
 import io.kamax.matrix.json.GsonUtil;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
 
-public class MatrixEndpoint {
+public class MatrixEndpoint extends GenericEndpoint {
 
     private _MatrixClient client;
-    private String roomId;
-    private String callId;
-    private String remoteId;
-
-    private List<CallListener> listeners = new ArrayList<>();
 
     public MatrixEndpoint(MatrixBridgeUser user, String roomId, String callId) {
+        super(callId, roomId, user.getRemoteId());
         this.client = user.getClient();
-        this.remoteId = user.getRemoteId();
-        this.roomId = roomId;
-        this.callId = callId;
     }
 
     private void ifOpen(Runnable r) {
@@ -56,41 +52,37 @@ public class MatrixEndpoint {
         try {
             ifOpen(r);
         } catch (RuntimeException ex) {
-            close(CallHangupEvent.from(callId, ex.getMessage()));
+            close(CallHangupEvent.from(getCallId(), ex.getMessage()));
         }
     }
 
     void inject(CallInviteEvent ev) {
-        listeners.forEach(l -> l.onInvite(remoteId, ev));
+        fireCallEvent(l -> l.onInvite(getUserId(), ev));
     }
 
     void inject(CallCandidatesEvent ev) {
-        listeners.forEach(l -> l.onCandidates(ev));
+        fireCallEvent(l -> l.onCandidates(ev));
     }
 
     void inject(CallAnswerEvent ev) {
-        listeners.forEach(l -> l.onAnswer(ev));
+        fireCallEvent(l -> l.onAnswer(ev));
     }
 
     void inject(CallHangupEvent ev) {
-        listeners.forEach(l -> l.onHangup(ev));
-    }
-
-    public void addListener(CallListener listener) {
-        listeners.add(listener);
+        fireCallEvent(l -> l.onHangup(ev));
     }
 
     public void handle(CallInviteEvent ev) {
         ifOpenOrHangup(() -> {
             ev.getOffer().setType("offer");
-            client.getRoom(roomId).sendEvent("m.call.invite", GsonUtil.makeObj(ev));
+            client.getRoom(getChannelId()).sendEvent("m.call.invite", GsonUtil.makeObj(ev));
         });
     }
 
     public void handle(CallAnswerEvent ev) {
         ifOpenOrHangup(() -> {
             ev.getAnswer().setType("answer");
-            client.getRoom(roomId).sendEvent("m.call.answer", GsonUtil.makeObj(ev));
+            client.getRoom(getChannelId()).sendEvent("m.call.answer", GsonUtil.makeObj(ev));
         });
     }
 
@@ -101,18 +93,18 @@ public class MatrixEndpoint {
     private synchronized void close(CallHangupEvent ev) {
         ifOpen(() -> {
             try {
-                client.getRoom(roomId).sendEvent("m.call.hangup", GsonUtil.makeObj(CallHangupEvent.from(ev.getCallId(), ev.getReason())));
+                client.getRoom(getChannelId()).sendEvent("m.call.hangup", GsonUtil.makeObj(CallHangupEvent.from(ev.getCallId(), ev.getReason())));
             } catch (RuntimeException e) {
                 // TODO possibly report this as warning?
             } finally {
                 client = null;
-                listeners.forEach(CallListener::onClose);
+                fireEndpointEvent(EndpointListener::onClose);
             }
         });
     }
 
     public void close() {
-        close(CallHangupEvent.from(callId, null));
+        close(CallHangupEvent.from(getChannelId(), null));
     }
 
 }
