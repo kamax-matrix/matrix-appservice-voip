@@ -26,7 +26,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
-public class GenericEndpoint implements Endpoint {
+public abstract class GenericEndpoint implements Endpoint {
 
     private String callId;
     private String channelId;
@@ -35,7 +35,7 @@ public class GenericEndpoint implements Endpoint {
     private List<CallListener> cListeners = new ArrayList<>();
     private List<EndpointListener> eListeners = new ArrayList<>();
 
-    protected GenericEndpoint(String callId, String channelId, String userId) {
+    protected GenericEndpoint(String userId, String channelId, String callId) {
         this.callId = callId;
         this.channelId = channelId;
         this.userId = userId;

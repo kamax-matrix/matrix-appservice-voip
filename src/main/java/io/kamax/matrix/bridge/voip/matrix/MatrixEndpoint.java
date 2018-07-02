@@ -36,7 +36,7 @@ public class MatrixEndpoint extends GenericEndpoint {
     private _MatrixClient client;
 
     public MatrixEndpoint(MatrixBridgeUser user, String roomId, String callId) {
-        super(callId, roomId, user.getRemoteId());
+        super(user.getLocalId(), roomId, callId);
         this.client = user.getClient();
     }
 
@@ -56,8 +56,8 @@ public class MatrixEndpoint extends GenericEndpoint {
         }
     }
 
-    void inject(CallInviteEvent ev) {
-        fireCallEvent(l -> l.onInvite(getUserId(), ev));
+    void inject(String from, CallInviteEvent ev) {
+        fireCallEvent(l -> l.onInvite(from, ev));
     }
 
     void inject(CallCandidatesEvent ev) {
@@ -72,13 +72,20 @@ public class MatrixEndpoint extends GenericEndpoint {
         fireCallEvent(l -> l.onHangup(ev));
     }
 
-    public void handle(CallInviteEvent ev) {
+    @Override
+    public void handle(String from, CallInviteEvent ev) {
         ifOpenOrHangup(() -> {
             ev.getOffer().setType("offer");
             client.getRoom(getChannelId()).sendEvent("m.call.invite", GsonUtil.makeObj(ev));
         });
     }
 
+    @Override
+    public void handle(CallCandidatesEvent ev) {
+        // TODO
+    }
+
+    @Override
     public void handle(CallAnswerEvent ev) {
         ifOpenOrHangup(() -> {
             ev.getAnswer().setType("answer");
@@ -86,6 +93,7 @@ public class MatrixEndpoint extends GenericEndpoint {
         });
     }
 
+    @Override
     public void handle(CallHangupEvent evRemote) {
         close(evRemote);
     }
@@ -104,7 +112,7 @@ public class MatrixEndpoint extends GenericEndpoint {
     }
 
     public void close() {
-        close(CallHangupEvent.from(getChannelId(), null));
+        close(CallHangupEvent.from(getCallId(), null));
     }
 
 }

@@ -18,14 +18,40 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package io.kamax.matrix.bridge.voip.matrix;
+package io.kamax.matrix.bridge.voip.config;
 
-import io.kamax.matrix.bridge.voip.CallInfo;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.context.annotation.Configuration;
 
-public interface MatrixListener {
+import java.util.HashMap;
+import java.util.Map;
 
-    void onCallCreated(MatrixEndpoint call, CallInfo info);
+@Configuration
+@ConfigurationProperties("bridge")
+public class BridgeConfig {
 
-    void onCallDestroyed(String id);
+    public class Mappings {
+
+        private Map<String, String> users = new HashMap<>();
+
+        public Map<String, String> getUsers() {
+            return users;
+        }
+
+        public void setUsers(Map<String, String> users) {
+            this.users = users;
+        }
+
+    }
+
+    private Mappings mapping = new Mappings();
+
+    public Mappings getMapping() {
+        return mapping;
+    }
+
+    public void setMapping(Mappings mapping) {
+        this.mapping = mapping;
+    }
 
 }

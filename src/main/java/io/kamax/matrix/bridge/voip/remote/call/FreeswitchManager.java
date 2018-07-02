@@ -21,7 +21,9 @@
 package io.kamax.matrix.bridge.voip.remote.call;
 
 import com.google.gson.JsonObject;
+import io.kamax.matrix.bridge.voip.CallInfo;
 import io.kamax.matrix.bridge.voip.CallSdpEvent;
+import io.kamax.matrix.bridge.voip.config.FreeswitchConfig;
 import io.kamax.matrix.bridge.voip.matrix.event.CallAnswerEvent;
 import io.kamax.matrix.bridge.voip.matrix.event.CallHangupEvent;
 import io.kamax.matrix.bridge.voip.matrix.event.CallInviteEvent;
@@ -36,10 +38,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 
 public class FreeswitchManager {
-
-    private final String wsUrl = System.getenv("FREESWITCH_VERTO_WS_URL");
-    private final String wsLogin = System.getenv("FREESWITCH_VERTO_LOGIN");
-    private final String wsPass = System.getenv("FREESWITCH_VERTO_PASS");
 
     private final Logger log = LoggerFactory.getLogger(FreeswitchManager.class);
 
@@ -57,12 +55,12 @@ public class FreeswitchManager {
         return obj;
     }
 
-    public FreeswitchManager() {
-        this.id = wsLogin;
+    public FreeswitchManager(FreeswitchConfig cfg) {
+        this.id = cfg.getVerto().getLogin();
 
         try {
             client = new FreeswitchVertoClient();
-            client.connect(wsUrl, new FreeswitchVertoHandler() {
+            client.connect(cfg.getVerto().getUrl(), new FreeswitchVertoHandler() {
 
                 @Override
                 public void onClose(FreeswitchVertoClient client, CloseReason reason) {
@@ -74,16 +72,22 @@ public class FreeswitchManager {
                 public void onMessage(String method, JsonObject params, FreeswitchVertoClient.Callback callback) {
                     log.info("Incoming {} with {}", method, params);
                     if (VertoMethod.Invite.matches(method)) {
-                        CallInviteEvent cEv = CallInviteEvent.get(
-                                GsonUtil.getStringOrThrow(params, "callID"),
-                                GsonUtil.getStringOrThrow(params, "sdp"),
-                                60000);
+                        String callId = GsonUtil.getStringOrThrow(params, "callID");
                         String caller = GsonUtil.getStringOrThrow(params, "caller_id_number");
+                        String callee = GsonUtil.findString(params, "callee_id_number").orElse(id);
+                        String sdp = GsonUtil.getStringOrThrow(params, "sdp");
 
-                        FreeswitchEndpoint endpoint = getEndpoint(cEv.getCallId());
-                        listeners.forEach(l -> l.onCallCreate(endpoint, caller, cEv));
-                        endpoint.inject(caller, cEv);
+                        CallInfo info = new CallInfo(callId, sessionId, caller, callee, sdp);
 
+                        FreeswitchEndpoint endpoint = makeEndpoint(caller, callId);
+                        listeners.forEach(l -> l.onCallCreate(endpoint, info));
+
+                        if (!endpoint.isClosed()) {
+                            CallInviteEvent cEv = CallInviteEvent.get(callId, sdp, 60 * 1000);
+                            endpoint.inject(caller, cEv);
+                        } else {
+                            log.info("Call was cancelled by bridge");
+                        }
                     }
 
                     if (VertoMethod.Media.matches(method)) {
@@ -116,8 +120,8 @@ public class FreeswitchManager {
 
             log.info("Freeswitch login: start");
             client.sendRequest("login", withObject(obj -> {
-                obj.addProperty("login", wsLogin);
-                obj.addProperty("passwd", wsPass);
+                obj.addProperty("login", cfg.getVerto().getLogin());
+                obj.addProperty("passwd", cfg.getVerto().getPassword());
                 obj.addProperty("sessId", sessionId);
             })).thenAccept(obj -> {
                 log.debug("Freeswitch login: message: {}", obj);
@@ -137,15 +141,19 @@ public class FreeswitchManager {
         return Objects.isNull(client) || client.isClosed();
     }
 
-    public FreeswitchEndpoint getEndpoint(String callId) {
+    public FreeswitchEndpoint makeEndpoint(String destination, String callId) {
         return endpoints.computeIfAbsent(callId, cId -> {
-            FreeswitchEndpoint endpoint = new FreeswitchEndpoint(id, cId, client, sessionId);
+            FreeswitchEndpoint endpoint = new FreeswitchEndpoint(destination, sessionId, callId, client);
             endpoint.addListener(() -> {
                 log.info("Removing endpoint for Call {}: closed", callId);
                 endpoints.remove(callId);
             });
             return endpoint;
         });
+    }
+
+    public FreeswitchEndpoint getEndpoint(String callId) {
+        return endpoints.get(callId);
     }
 
     public synchronized void close() {

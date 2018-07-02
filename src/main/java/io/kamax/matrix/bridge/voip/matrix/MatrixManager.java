@@ -25,10 +25,12 @@ import io.kamax.matrix.MatrixID;
 import io.kamax.matrix.MatrixIdCodec;
 import io.kamax.matrix._MatrixID;
 import io.kamax.matrix._MatrixUserProfile;
+import io.kamax.matrix.bridge.voip.CallInfo;
 import io.kamax.matrix.bridge.voip.HomeView;
 import io.kamax.matrix.bridge.voip.IdentityView;
 import io.kamax.matrix.bridge.voip.config.EntityTemplateConfig;
 import io.kamax.matrix.bridge.voip.config.HomeserverConfig;
+import io.kamax.matrix.bridge.voip.config.MatrixConfig;
 import io.kamax.matrix.bridge.voip.matrix.event.*;
 import io.kamax.matrix.client.MatrixClientContext;
 import io.kamax.matrix.client._MatrixClient;
@@ -38,6 +40,7 @@ import io.kamax.matrix.event.*;
 import io.kamax.matrix.hs.RoomMembership;
 import io.kamax.matrix.hs._MatrixRoom;
 import io.kamax.matrix.json.GsonUtil;
+import io.kamax.matrix.room.RoomCreationOptions;
 import org.apache.commons.collections4.queue.CircularFifoQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,7 +60,11 @@ public class MatrixManager {
 
     private final Logger log = LoggerFactory.getLogger(MatrixManager.class);
 
-    private String domain;
+    private final String remoteIdPlaceholder = "%REMOTE_ID%";
+    private final String remoteIdRegexGroupName = "remoteId";
+    private final String remoteIdRegexGroup = "(?<" + remoteIdRegexGroupName + ">.*)";
+
+    private MatrixConfig cfg;
     private List<Pattern> patterns;
     private _MatrixApplicationServiceClient as;
     private Map<String, MatrixBridgeUser> vMxUsers = new ConcurrentHashMap<>();
@@ -65,23 +72,30 @@ public class MatrixManager {
 
     private List<MatrixListener> listeners = new ArrayList<>();
 
-    public MatrixManager(HomeserverConfig hsCfg) {
-        this.domain = hsCfg.getDomain();
-
-        patterns = new ArrayList<>();
-        for (EntityTemplateConfig entityTemplate : hsCfg.getUsers()) {
-            patterns.add(Pattern.compile(entityTemplate.getTemplate().replace("%REMOTE_ID%", "(?<remoteId>.*)")));
-        }
-        if (patterns.size() < 1) {
+    public MatrixManager(MatrixConfig mxCfg, HomeserverConfig hsCfg) {
+        if (mxCfg.getUsers().size() < 1) {
             log.error("At least one user template must be configured");
             System.exit(1);
         }
 
+        this.cfg = mxCfg;
+
+        patterns = new ArrayList<>();
+        for (EntityTemplateConfig entityTemplate : mxCfg.getUsers()) {
+            String pattern = entityTemplate.getTemplate().replace(remoteIdPlaceholder, remoteIdRegexGroup);
+            log.info("Compiling {} to {}", entityTemplate.getTemplate(), pattern);
+            patterns.add(Pattern.compile(pattern));
+        }
+
         as = new MatrixApplicationServiceClient(new MatrixClientContext()
-                .setDomain(hsCfg.getDomain())
+                .setDomain(mxCfg.getDomain())
                 .setHsBaseUrl(hsCfg.getHost())
                 .setToken(hsCfg.getAsToken())
                 .setUserWithLocalpart(hsCfg.getLocalpart()));
+    }
+
+    public String getDomain() {
+        return cfg.getDomain();
     }
 
     private Optional<Matcher> findMatcherForUser(String localpart) {
@@ -96,7 +110,7 @@ public class MatrixManager {
     }
 
     private Optional<Matcher> findMatcherForUser(_MatrixID mxId) {
-        if (!mxId.getDomain().equals(domain)) {
+        if (!mxId.getDomain().equals(cfg.getDomain())) {
             // Ignoring non-local user
             return Optional.empty();
         }
@@ -105,8 +119,19 @@ public class MatrixManager {
     }
 
     public Optional<MatrixBridgeUser> findClientForUser(_MatrixID mxId) {
-        return findMatcherForUser(mxId)
-                .map(m -> vMxUsers.computeIfAbsent(m.group("remoteId"), id -> new MatrixBridgeUser(as.getUser(mxId.getLocalPart()), id)));
+        return findMatcherForUser(mxId).map(
+                m -> vMxUsers.computeIfAbsent(m.group(remoteIdRegexGroupName),
+                        id -> new MatrixBridgeUser(as.getUser(mxId.getLocalPart()), mxId.getId(), id))
+        );
+    }
+
+    public MatrixBridgeUser getClientForUser(String remoteId) {
+        return findClientForUser(getMatrixIdForRemoteId(remoteId)).orElseThrow(IllegalArgumentException::new);
+    }
+
+    public _MatrixID getMatrixIdForRemoteId(String remoteId) {
+        String localpart = cfg.getUsers().get(0).getTemplate().replace(remoteIdPlaceholder, MatrixIdCodec.encode(remoteId));
+        return MatrixID.from(localpart, cfg.getDomain()).valid();
     }
 
     public HomeView forHome(String token) {
@@ -233,7 +258,7 @@ public class MatrixManager {
 
                 MatrixBridgeUser vUser = vUsers.get(0);
                 if ("m.call.invite".equals(ev.getType())) {
-                    log.info("Call {}: invite {}", call.getCallId(), vUser.getRemoteId());
+                    log.info("Call {}: Calling {}", call.getCallId(), vUser.getRemoteId());
                     CallInviteEvent data = GsonUtil.get().fromJson(content, CallInviteEvent.class);
                     if (!data.isValid()) {
                         log.warn("Call {}: Ignoring: Invalid", call.getCallId());
@@ -243,7 +268,7 @@ public class MatrixManager {
                     long age = GsonUtil.findLong(ev.getJson(), "age").orElse(0L);
                     Instant ts = Instant.now().minus(age, ChronoUnit.MILLIS);
                     Instant expiredAt = ts.plus(data.getLifetime(), ChronoUnit.MILLIS);
-                    log.info("Call {}: From {} expiring in {} ({})", call.getCallId(), ts, data.getLifetime(), expiredAt);
+                    log.info("Call {}: From {} at {} expiring in {} ({})", call.getCallId(), ev.getSender().getId(), ts, data.getLifetime(), expiredAt);
                     if (expiredAt.isBefore(Instant.now())) {
                         log.info("Call {}: Expired", call.getCallId());
                         return;
@@ -256,10 +281,11 @@ public class MatrixManager {
                             data.getOffer().getSdp()
                     );
 
+                    CallInfo cInfo = new CallInfo(call.getCallId(), ev.getRoomId(), ev.getSender().getId(), vUser.getRemoteId(), data.getOffer().getSdp());
                     MatrixEndpoint mxCall = new MatrixEndpoint(vUser, ev.getRoomId(), call.getCallId());
                     endpoints.put(data.getCallId(), mxCall);
-                    listeners.forEach(l -> l.onCallCreated(mxCall, vUser.getRemoteId(), data));
-                    mxCall.inject(data);
+                    listeners.forEach(l -> l.onCallCreated(mxCall, cInfo));
+                    mxCall.inject(ev.getSender().getId(), data);
 
                 }
 
@@ -316,8 +342,8 @@ public class MatrixManager {
         listeners.add(listener);
     }
 
-    public MatrixEndpoint getEndpoint(String userId, String roomId, String callId) {
-        MatrixBridgeUser user = findClientForUser(MatrixID.asAcceptable("_voip_" + userId, domain)).orElseThrow(IllegalArgumentException::new);
+    public MatrixEndpoint getEndpoint(String remoteId, String roomId, String callId) {
+        MatrixBridgeUser user = getClientForUser(remoteId);
         MatrixEndpoint endpoint = new MatrixEndpoint(user, roomId, callId);
         endpoint.addListener(() -> {
             log.info("Removing endpoint for Call {}: closed", callId);
@@ -325,6 +351,31 @@ public class MatrixManager {
         });
         endpoints.put(callId, endpoint);
         return endpoint;
+    }
+
+    public MatrixEndpoint getOneToOneChannelTo(String remoteId, _MatrixID targetUserId, String callId) {
+        MatrixBridgeUser user = getClientForUser(remoteId);
+        return user.getClient().getJoinedRooms().stream()
+                .filter(r -> {
+                    List<_MatrixUserProfile> users = r.getJoinedUsers();
+                    if (users.size() != 2) {
+                        log.info("Room {} is not 1:1", r.getAddress());
+                        return false;
+                    }
+
+                    return users.stream().anyMatch(u -> targetUserId.equals(u.getId()));
+                }).findFirst().map(r -> {
+                    log.info("Found 1:1 room with {}: {}", targetUserId.getId(), r.getAddress());
+                    return getEndpoint(remoteId, r.getAddress(), callId);
+                }).orElseGet(() -> {
+                    log.info("No 1:1 room with {}, making one instead", targetUserId.getId());
+
+                    RoomCreationOptions opts = RoomCreationOptions.build()
+                            .setDirect(true)
+                            .setInvites(Collections.singleton(targetUserId)).get();
+                    _MatrixRoom r = user.getClient().createRoom(opts);
+                    return getEndpoint(remoteId, r.getAddress(), callId);
+                });
     }
 
 }

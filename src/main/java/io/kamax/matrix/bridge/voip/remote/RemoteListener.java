@@ -20,11 +20,11 @@
 
 package io.kamax.matrix.bridge.voip.remote;
 
-import io.kamax.matrix.bridge.voip.matrix.event.CallInviteEvent;
+import io.kamax.matrix.bridge.voip.CallInfo;
 
 public interface RemoteListener {
 
-    void onCallCreate(RemoteEndpoint endpoint, String origin, CallInviteEvent ev);
+    void onCallCreate(RemoteEndpoint endpoint, CallInfo info);
 
     void onCallDestroy(String id);
 

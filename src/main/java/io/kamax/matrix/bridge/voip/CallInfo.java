@@ -18,32 +18,46 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package io.kamax.matrix.bridge.voip.matrix;
+package io.kamax.matrix.bridge.voip;
 
-import io.kamax.matrix.client._MatrixClient;
+public class CallInfo {
 
-public class MatrixBridgeUser {
+    private String id;
+    private String contextId;
+    private String caller;
+    private String callee;
+    private String sdp;
 
-    private _MatrixClient client;
-    private String localId;
-    private String remoteId;
-
-    public MatrixBridgeUser(_MatrixClient client, String localId, String remoteId) {
-        this.client = client;
-        this.localId = localId;
-        this.remoteId = remoteId;
+    public CallInfo(String id, String contextId, String caller, String callee, String sdp) {
+        this.id = id;
+        this.contextId = contextId;
+        this.caller = caller;
+        this.callee = callee;
+        this.sdp = sdp;
     }
 
-    public _MatrixClient getClient() {
-        return client;
+    public String getId() {
+        return id;
     }
 
-    public String getLocalId() {
-        return localId;
+    public String getContextId() {
+        return contextId;
     }
 
-    public String getRemoteId() {
-        return remoteId;
+    public void setContextId(String contextId) {
+        this.contextId = contextId;
+    }
+
+    public String getCaller() {
+        return caller;
+    }
+
+    public String getCallee() {
+        return callee;
+    }
+
+    public String getSdp() {
+        return sdp;
     }
 
 }

@@ -20,13 +20,17 @@
 
 package io.kamax.matrix.bridge.voip;
 
+import io.kamax.matrix.MatrixID;
+import io.kamax.matrix._MatrixID;
+import io.kamax.matrix.bridge.voip.config.BridgeConfig;
 import io.kamax.matrix.bridge.voip.matrix.MatrixEndpoint;
 import io.kamax.matrix.bridge.voip.matrix.MatrixListener;
 import io.kamax.matrix.bridge.voip.matrix.MatrixManager;
-import io.kamax.matrix.bridge.voip.matrix.event.CallInviteEvent;
 import io.kamax.matrix.bridge.voip.remote.RemoteEndpoint;
 import io.kamax.matrix.bridge.voip.remote.RemoteListener;
 import io.kamax.matrix.bridge.voip.remote.RemoteManager;
+import org.apache.commons.collections4.BidiMap;
+import org.apache.commons.collections4.bidimap.DualHashBidiMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.event.ApplicationStartedEvent;
@@ -41,16 +45,24 @@ import java.util.concurrent.ConcurrentHashMap;
 public class Bridge {
 
     private final Logger log = LoggerFactory.getLogger(Bridge.class);
-    private final String incomingRoomId = System.getenv("BRIDGE_INCOMING_ROOM_ID");
 
+    private BridgeConfig cfg;
     private MatrixManager matrix;
     private RemoteManager remote;
 
+    private BidiMap<_MatrixID, String> mappings = new DualHashBidiMap<>();
     private Map<String, Call> calls = new ConcurrentHashMap<>();
 
-    public Bridge(MatrixManager matrix, RemoteManager remote) {
+    public Bridge(BridgeConfig cfg, MatrixManager matrix, RemoteManager remote) {
+        this.cfg = cfg;
         this.matrix = matrix;
         this.remote = remote;
+
+        cfg.getMapping().getUsers().forEach((localId, remoteId) -> {
+            _MatrixID mxId = MatrixID.from(localId, matrix.getDomain()).valid();
+            log.info("Mapping {} to {}", mxId.getId(), remoteId);
+            mappings.put(mxId, remoteId);
+        });
     }
 
     private void closeCall(String id) {
@@ -68,10 +80,10 @@ public class Bridge {
         matrix.addListener(new MatrixListener() {
 
             @Override
-            public void onCallCreated(MatrixEndpoint epLocal, String destination, CallInviteEvent callEv) {
-                RemoteEndpoint epRemote = remote.getEndpoint(callEv.getCallId(), epLocal.getChannelId(), destination);
-                calls.put(callEv.getCallId(), new Call(callEv.getCallId(), epLocal, epRemote));
-                log.info("Call {}: created", callEv.getCallId());
+            public void onCallCreated(MatrixEndpoint epLocal, CallInfo info) {
+                RemoteEndpoint epRemote = remote.getEndpoint(info.getId(), epLocal.getChannelId(), info.getCallee());
+                calls.put(info.getId(), new Call(info.getId(), epLocal, epRemote));
+                log.info("Call {}: Created", info.getId());
             }
 
             @Override
@@ -84,10 +96,18 @@ public class Bridge {
         remote.addListener(new RemoteListener() {
 
             @Override
-            public void onCallCreate(RemoteEndpoint endpoint, String origin, CallInviteEvent ev) {
-                MatrixEndpoint epLocal = matrix.getEndpoint(origin, incomingRoomId, ev.getCallId());
-                calls.put(ev.getCallId(), new Call(ev.getCallId(), epLocal, endpoint));
-                log.info("Call {}: created", ev.getCallId());
+            public void onCallCreate(RemoteEndpoint endpoint, CallInfo info) {
+                log.info("Remote call {} from {} to {}", info.getId(), info.getCaller(), info.getCallee());
+
+                _MatrixID targetUser = mappings.inverseBidiMap().get(info.getCallee());
+                if (Objects.isNull(targetUser)) {
+                    log.warn("Call {}: No Matrix mapping found for {}: hanging up", info.getId(), info.getCallee());
+                    endpoint.close();
+                } else {
+                    MatrixEndpoint epLocal = matrix.getOneToOneChannelTo(info.getCaller(), targetUser, info.getId());
+                    calls.put(info.getId(), new Call(info.getId(), epLocal, endpoint));
+                    log.info("Call {}: created", info.getId());
+                }
             }
 
             @Override

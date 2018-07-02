@@ -40,11 +40,11 @@ public class RemoteEndpoint extends GenericEndpoint {
 
     private FreeswitchEndpoint voip;
 
-    public RemoteEndpoint(FreeswitchEndpoint voip, String callId, String channelId, String userId) {
-        super(callId, channelId, userId);
+    public RemoteEndpoint(String userId, String channelId, String callId, FreeswitchEndpoint voip) {
+        super(userId, channelId, callId);
 
         this.voip = voip;
-        this.voip.addListener(this::close); // Endpoint Listener
+        this.voip.addListener(this::doClose); // Endpoint Listener
         this.voip.addListener(new CallListener() {
 
             @Override
@@ -89,21 +89,25 @@ public class RemoteEndpoint extends GenericEndpoint {
 
     void inject(CallHangupEvent ev) {
         fireHangupEvent(ev.getReason());
-        close();
+        doClose();
     }
 
-    public void handle(String destination, CallInviteEvent ev) {
-        voip.handle(destination, ev);
+    @Override
+    public void handle(String from, CallInviteEvent ev) {
+        voip.handle(from, ev);
     }
 
+    @Override
     public void handle(CallCandidatesEvent ev) {
         voip.handle(ev);
     }
 
+    @Override
     public void handle(CallAnswerEvent ev) {
         voip.handle(ev);
     }
 
+    @Override
     public void handle(CallHangupEvent ev) {
         voip.handle(ev);
     }
@@ -112,13 +116,17 @@ public class RemoteEndpoint extends GenericEndpoint {
         return Objects.isNull(voip);
     }
 
-    public synchronized void close() {
+    private synchronized void doClose() {
         if (isClosed()) {
             return;
         }
 
         voip = null;
         fireEndpointEvent(EndpointListener::onClose);
+    }
+
+    public void close() {
+        voip.close();
     }
 
 }

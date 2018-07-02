@@ -47,9 +47,9 @@ public class Call {
         this.local.addListener(new CallListener() {
 
             @Override
-            public void onInvite(String destination, CallInviteEvent ev) {
-                log.info("Call {}: Matrix: invite for {}", id, destination);
-                remote.handle(destination, ev);
+            public void onInvite(String from, CallInviteEvent ev) {
+                log.info("Call {}: Matrix: invite from {}", id, from);
+                remote.handle(from, ev);
             }
 
             @Override
@@ -87,7 +87,7 @@ public class Call {
             @Override
             public void onInvite(String from, CallInviteEvent ev) {
                 log.info("Call {}: Remote: invite from {}", id, from);
-                local.handle(ev);
+                local.handle(from, ev);
             }
 
             @Override
@@ -121,16 +121,20 @@ public class Call {
     }
 
     public synchronized void terminate(String reason) {
-        if (Objects.isNull(local) || Objects.isNull(remote)) {
+        if (Objects.isNull(local) && Objects.isNull(remote)) {
             return;
         }
 
         log.info("Call {}: terminating", id);
-        local.close();
-        remote.close();
+        if (Objects.nonNull(local)) {
+            local.close();
+            local = null;
+        }
 
-        local = null;
-        remote = null;
+        if (Objects.nonNull(remote)) {
+            remote.close();
+            remote = null;
+        }
     }
 
     public void terminate() {

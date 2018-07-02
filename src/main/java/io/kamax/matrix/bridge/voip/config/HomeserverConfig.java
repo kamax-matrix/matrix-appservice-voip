@@ -29,21 +29,19 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
 import java.net.URL;
-import java.util.List;
 import java.util.Objects;
 
 @Configuration
 @ConfigurationProperties("matrix.home")
 public class HomeserverConfig implements InitializingBean {
 
-    private final Logger log = LoggerFactory.getLogger(HomeserverConfig.class);
+    private transient final Logger log = LoggerFactory.getLogger(HomeserverConfig.class);
 
     private MatrixConfig mxCfg;
     private URL host;
     private String asToken;
     private String hsToken;
     private String localpart;
-    private List<EntityTemplateConfig> users;
 
     @Autowired
     public HomeserverConfig(MatrixConfig mxCfg) {
@@ -86,14 +84,6 @@ public class HomeserverConfig implements InitializingBean {
         this.localpart = localpart;
     }
 
-    public List<EntityTemplateConfig> getUsers() {
-        return users;
-    }
-
-    public void setUsers(List<EntityTemplateConfig> users) {
-        this.users = users;
-    }
-
     @Override
     public void afterPropertiesSet() throws Exception {
         if (Objects.isNull(host)) {
@@ -112,19 +102,10 @@ public class HomeserverConfig implements InitializingBean {
             throw new RuntimeException("Matrix AS localpart must be configured");
         }
 
-        if (Objects.isNull(users) || users.isEmpty()) {
-            throw new RuntimeException("At least one Matrix user template must be configured");
-        }
-
         log.info("Domain: {}", getDomain());
         log.info("Host: {}", getHost());
-        log.info("AS Token: {}", getAsToken());
-        log.info("HS Token: {}", getHsToken());
         log.info("Localpart: {}", getLocalpart());
-        log.info("Users:");
-        for (EntityTemplateConfig p : getUsers()) {
-            log.info("\t- {}", p.getTemplate());
-        }
+
     }
 
 }

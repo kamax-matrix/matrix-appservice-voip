@@ -21,16 +21,23 @@
 package io.kamax.matrix.bridge.voip.config;
 
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
 import javax.annotation.PostConstruct;
+import java.util.List;
+import java.util.Objects;
 
 @Configuration
 @ConfigurationProperties("matrix")
 public class MatrixConfig {
 
+    private transient final Logger log = LoggerFactory.getLogger(MatrixConfig.class);
+
     private String domain;
+    private List<EntityTemplateConfig> users;
 
     public String getDomain() {
         return domain;
@@ -40,10 +47,27 @@ public class MatrixConfig {
         this.domain = domain;
     }
 
+    public List<EntityTemplateConfig> getUsers() {
+        return users;
+    }
+
+    public void setUsers(List<EntityTemplateConfig> users) {
+        this.users = users;
+    }
+
     @PostConstruct
     public void validate() {
         if (StringUtils.isBlank(domain)) {
             throw new RuntimeException("Matrix domain must be configured");
+        }
+
+        if (Objects.isNull(users) || users.isEmpty()) {
+            throw new RuntimeException("At least one Matrix user template must be configured");
+        }
+
+        log.info("Users:");
+        for (EntityTemplateConfig p : getUsers()) {
+            log.info("\t- {}", p.getTemplate());
         }
     }
 

@@ -20,12 +20,13 @@
 
 package io.kamax.matrix.bridge.voip.remote;
 
-import io.kamax.matrix.bridge.voip.matrix.event.CallInviteEvent;
+import io.kamax.matrix.bridge.voip.CallInfo;
 import io.kamax.matrix.bridge.voip.remote.call.FreeswitchEndpoint;
 import io.kamax.matrix.bridge.voip.remote.call.FreeswitchListener;
 import io.kamax.matrix.bridge.voip.remote.call.FreeswitchManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -38,18 +39,19 @@ public class RemoteManager {
 
     private final Logger log = LoggerFactory.getLogger(RemoteManager.class);
 
-    private FreeswitchManager as;
+    private FreeswitchManager voipMgr;
 
     private Map<String, RemoteEndpoint> endpoints = new ConcurrentHashMap<>();
     private List<RemoteListener> listeners = new ArrayList<>();
 
-    public RemoteManager() {
-        as = new FreeswitchManager();
-        as.addListener(new FreeswitchListener() {
+    @Autowired
+    public RemoteManager(FreeswitchManager voipMgr) {
+        this.voipMgr = voipMgr;
+        voipMgr.addListener(new FreeswitchListener() {
 
             @Override
-            public void onCallCreate(FreeswitchEndpoint endpoint, String origin, CallInviteEvent ev) {
-                listeners.forEach(l -> l.onCallCreate(getEndpoint(ev.getCallId(), endpoint.getChannelId(), endpoint.getUserId()), origin, ev));
+            public void onCallCreate(FreeswitchEndpoint endpoint, CallInfo info) {
+                listeners.forEach(l -> l.onCallCreate(getEndpoint(info.getId(), endpoint.getChannelId(), endpoint.getUserId()), info));
             }
 
             @Override
@@ -67,7 +69,7 @@ public class RemoteManager {
     public RemoteEndpoint getEndpoint(String callId, String channelId, String userId) {
         log.info("Call {}: Creating endpoint", callId);
         return endpoints.computeIfAbsent(callId, cId -> {
-            RemoteEndpoint endpoint = new RemoteEndpoint(as.getEndpoint(cId), callId, channelId, userId);
+            RemoteEndpoint endpoint = new RemoteEndpoint(userId, channelId, callId, voipMgr.makeEndpoint(userId, cId));
             endpoint.addListener(() -> {
                 log.info("Removing endpoint for Call {}: closed", callId);
                 endpoints.remove(callId);

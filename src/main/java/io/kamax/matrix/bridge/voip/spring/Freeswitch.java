@@ -18,14 +18,27 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package io.kamax.matrix.bridge.voip.matrix;
+package io.kamax.matrix.bridge.voip.spring;
 
-import io.kamax.matrix.bridge.voip.CallInfo;
+import io.kamax.matrix.bridge.voip.config.FreeswitchConfig;
+import io.kamax.matrix.bridge.voip.remote.call.FreeswitchManager;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 
-public interface MatrixListener {
+@Configuration
+public class Freeswitch {
 
-    void onCallCreated(MatrixEndpoint call, CallInfo info);
+    private FreeswitchManager mgr;
 
-    void onCallDestroyed(String id);
+    @Autowired
+    public Freeswitch(FreeswitchConfig cfg) {
+        mgr = new FreeswitchManager(cfg);
+    }
+
+    @Bean
+    public FreeswitchManager getManager() {
+        return mgr;
+    }
 
 }

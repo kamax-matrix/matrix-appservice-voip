@@ -47,8 +47,8 @@ public class FreeswitchEndpoint extends GenericEndpoint {
 
     private String fsSdp;
 
-    public FreeswitchEndpoint(String id, String callId, FreeswitchVertoClient client, String sessionId) {
-        super(callId, sessionId, id);
+    public FreeswitchEndpoint(String userId, String channelId, String callId, FreeswitchVertoClient client) {
+        super(userId, channelId, callId);
         this.client = client;
     }
 
@@ -57,6 +57,10 @@ public class FreeswitchEndpoint extends GenericEndpoint {
 
             @Override
             public void run() {
+                if (c.isDone()) {
+                    return;
+                }
+
                 long timeout = candidatesLastUpdate + candidateDelay;
                 long remaining = timeout - System.currentTimeMillis();
                 if (remaining > 0) {
@@ -106,8 +110,9 @@ public class FreeswitchEndpoint extends GenericEndpoint {
         fireHangupEvent(ev.getReason());
     }
 
-    public void handle(String destination, CallInviteEvent ev) {
-        log.info("Call {}: from {} to {}", getCallId(), getUserId(), destination);
+    @Override
+    public void handle(String from, CallInviteEvent ev) {
+        log.info("Call {}: from {} to {}", getCallId(), from, getUserId());
 
         log.info("Call {}: Invite: Awaiting candidates", getCallId());
         awaitCandidates().thenCompose(candidates -> {
@@ -118,8 +123,8 @@ public class FreeswitchEndpoint extends GenericEndpoint {
 
             JsonObject dialogParams = new JsonObject();
             dialogParams.addProperty("callID", ev.getCallId());
-            dialogParams.addProperty("destination_number", destination);
-            dialogParams.addProperty("remote_caller_id_number", getUserId());
+            dialogParams.addProperty("destination_number", getUserId());
+
             JsonObject data = new JsonObject();
             data.addProperty("sessId", getChannelId());
             data.addProperty("sdp", ev.getOffer().getSdp());
@@ -127,7 +132,6 @@ public class FreeswitchEndpoint extends GenericEndpoint {
 
             log.info("Call {}: Invite: Sending", getCallId());
             return client.sendRequest(VertoMethod.Invite.getId(), data);
-
         }).whenComplete((jsonObject, throwable) -> {
             if (Objects.nonNull(throwable)) {
                 log.info("Call {}: Invite to Freeswitch: FAIL", getCallId(), ev.getCallId());
