@@ -1,0 +1,35 @@
+# Domain that this AS belongs to. Used in a various place when generating/validating Matrix IDs.
+# This value is typically the same as your HS domain.
+matrix.domain: 'domain.tld'
+
+# A list of localpart templates used to generate virtual User IDs and produce a regexp for the HS config.
+matrix.users:
+  - template: '_voip_%REMOTE_ID%'
+
+# HS Client endpoint address
+matrix.home.host: 'http://localhost:8008'
+
+# The token used by the AS when communicating with the HS
+# On *Nix-based system, running the following command is a good start point: pwgen 64 1
+matrix.home.asToken: 'MY_SECRET_AS_TOKEN_CHANGE_ME'
+
+# The token used by the HS when communicating with the AS
+# On *Nix-based system, running the following command is a good start point: pwgen 64 1
+matrix.home.hsToken: 'MY_SECRET_HS_TOKEN_CHANGE_ME'
+
+# The localpart of the AS global user. The domain will always be the one of the HS
+matrix.home.localpart: 'appservice-voip'
+
+# FreeSWITCH Verto Websocket endpoint and credentials
+providers.freeswitch.verto:
+    url: 'wss://localhost:8082'
+    login: '1000'
+    password: '12345'
+
+# Mapping form Matrix localpart to Remote ID, used to match incoming remote calls
+#
+# Per ex, user1 would be turned into @user1:domain.tld and would receive all calls that the extension 1000 receives
+bridge.mapping.users:
+  user1: '1000'
+  user2: '1001'
+  user3: '1002'

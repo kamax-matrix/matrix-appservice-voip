@@ -18,6 +18,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+import java.util.regex.Pattern
+
 apply plugin: 'java'
 apply plugin: 'org.springframework.boot'
 
@@ -29,13 +31,13 @@ buildscript {
     }
 
     dependencies {
-        classpath 'org.springframework.boot:spring-boot-gradle-plugin:2.0.1.RELEASE'
+        classpath 'org.springframework.boot:spring-boot-gradle-plugin:2.0.3.RELEASE'
     }
 }
 
 dependencies {
     compile 'io.kamax:matrix-java-sdk:0.0.12-9-ga7b4871'
-    compile 'org.springframework.boot:spring-boot-starter-web:2.0.1.RELEASE'
+    compile 'org.springframework.boot:spring-boot-starter-web:2.0.3.RELEASE'
     compile 'org.apache.commons:commons-collections4:4.1'
     testCompile 'junit:junit:4.12'
 }
@@ -47,5 +49,6 @@ repositories {
 }
 
 bootJar {
+    baseName = 'mxasd-email'
     launchScript()
 }
