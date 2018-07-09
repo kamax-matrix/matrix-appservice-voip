@@ -49,6 +49,6 @@ repositories {
 }
 
 bootJar {
-    baseName = 'mxasd-email'
+    baseName = 'mxasd-voip'
     launchScript()
 }

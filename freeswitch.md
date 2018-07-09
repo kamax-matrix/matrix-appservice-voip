@@ -92,11 +92,18 @@ bridge.mapping.users:
 Restart the bridge
 
 ## Use
+### Outgoing calls
 If you wanted to call `00123456789`, assuming you've respected default values in [README.md](README.md):
 - Create a new room
 - Invite `@_voip_00123456789:domain.tld`
 - Hit the call button
 - The call should go through
+
+### Incoming calls
+If your DID number is `00123456789`:
+- Call it from a regular phone
+- You will get an invite to a room on the Matrix side, if not in a room already. Accept it
+- Your Matrix client should ring 
 
 ## Troubleshoot
 TBC

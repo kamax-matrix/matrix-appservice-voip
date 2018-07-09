@@ -42,7 +42,7 @@ git clone https://github.com/kamax-io/matrix-appservice-voip.git
 cd matrix-appservice-voip
 ```
 
-Run the following command in the repo base directory. The runnable jar `mxasd-email.jar` will be present in `./build/libs`:
+Run the following command in the repo base directory. The runnable jar `mxasd-voip.jar` will be present in `./build/libs`:
 ```bash
 ./gradlew build
 ```
@@ -55,10 +55,10 @@ Edit it to suit your environment.
 ## Run
 ### Manual
 Place the binary into the directory of your choice and run it.  
-Example using `/opt/mxasd-email`:
+Example using `/opt/mxasd-voip`:
 ```bash
-cd build/libs/mxasd-email.jar /opt/mxasd-email/
-/opt/mxasd-email/mxasd-email.jar
+cd build/libs/mxasd-voip.jar /opt/mxasd-voip/
+/opt/mxasd-voip/mxasd-voip.jar
 ```
 
 # Integration
