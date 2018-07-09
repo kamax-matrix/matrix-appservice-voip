@@ -12,7 +12,7 @@ This is a Voice/Video/SMS bridge for Matrix using the Application Services (AS) 
 
 This software is currently in alpha phase and is not ready for production: Your feedback and ideas are extremely welcome!  
 Please help us by opening an issue or joining us on Matrix at
-[#mxasd-email:kamax.io](https://matrix.to/#/#mxasd-voip:kamax.io)
+[#mxasd-voip:kamax.io](https://matrix.to/#/#mxasd-voip:kamax.io)
 
 # Requirements
 You will need Java 8 to build and run this bridge.
@@ -82,7 +82,7 @@ This bridge relies on the Verto module of FreeSWITCH which natively handles WebR
 Edit the `providers.freeswitch.verto` section in the config file to suit your installation and provide the Websocket URI
 and relevant credentials.
 
-To be continued: a FreeSWITCH guide to help getting a basic setup running
+See [the dedicated HOWTO](freeswitch.md) to quickly get started.
 
 # Usage
 At this time, there is no easy way to invite someone by phone number in Matrix clients. Therefore, you'll need to compute
@@ -98,4 +98,6 @@ The following step-by-step assumes you:
 3. Place a call, the device at `00123456789` should ring
 
 # Support
-On Matrix: #mxasd-email:kamax.io
+On Matrix:
+- #mxasd-voip:kamax.io
+- #kamax-mxasd-voip:t2bot.io
