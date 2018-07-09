@@ -61,6 +61,11 @@ public class FreeswitchEndpoint extends GenericEndpoint {
                     return;
                 }
 
+                if (isClosed()) {
+                    candidateTimer.cancel();
+                    return;
+                }
+
                 long timeout = candidatesLastUpdate + candidateDelay;
                 long remaining = timeout - System.currentTimeMillis();
                 if (remaining > 0) {
@@ -181,7 +186,7 @@ public class FreeswitchEndpoint extends GenericEndpoint {
                 RpcException rpcEx = (RpcException) error;
                 log.warn("Call {}: Freeswitch: Failure: {}", getCallId(), rpcEx.getRaw());
             } else {
-                log.warn("Call {}: Freeswitch: Failure: {}", getCallId(), error.getMessage());
+                log.warn("Call {}: Freeswitch: Failure: {}", getCallId(), error.getMessage(), error);
             }
 
             injectHangup("Remote Error");

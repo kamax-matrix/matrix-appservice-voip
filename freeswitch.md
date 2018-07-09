@@ -58,9 +58,18 @@ Edit `/etc/freeswitch/directory/default.xml` and replace `${{default_provider}}`
 ```
 
 #### Fix dialplan so it works by default
-Edit `/etc/freeswitch/dialplan/default/01_example.com.xml` and replace the following line:
+For outgoing calls, edit `/etc/freeswitch/dialplan/default/01_example.com.xml` and replace the following line:
 ```xml
     <condition field="destination_number" expression="^(011\d+)$">
+```
+with
+```xml
+    <condition field="destination_number" expression="^(\d+)$">
+```
+
+For incoming calls, edit `/etc/freeswitch/dialplan/public/00_inbound_did.xml` and replace the following line:
+```xml
+    <condition field="destination_number" expression="^(5551212)$">
 ```
 with
 ```xml
@@ -106,4 +115,7 @@ If your DID number is `00123456789`:
 - Your Matrix client should ring 
 
 ## Troubleshoot
-TBC
+### Bridge hangs up call directly
+If you see `unknown failure: ERROR_CODE` for the following codes:
+- `INVALID_GATEWAY`: The SIP gateway name doesn't match the `default_gateway` value.
+- `INCOMPATIBLE DESTINATION`: Your SIP line/gateway is not connected
