@@ -1,5 +1,5 @@
 # Matrix Bridge to Voice and Video networks
-[![Build Status](https://travis-ci.org/kamax-io/matrix-appservice-voip.svg?branch=master)](https://travis-ci.org/kamax-io/matrix-appservice-voip)
+[![Build Status](https://travis-ci.org/kamax-matrix/matrix-appservice-voip.svg?branch=master)](https://travis-ci.org/kamax-matrix/matrix-appservice-voip)
 
 [Requirements](#requirements)  
 [Setup](#setup)  
@@ -18,7 +18,7 @@ Please help us by opening an issue or joining us on Matrix at
 You will need Java 8 to build and run this bridge.
 
 # Setup
-Setup can either be done via downloading [the latest binary](https://github.com/kamax-io/matrix-appservice-voip/releases),
+Setup can either be done via downloading [the latest binary](https://github.com/kamax-matrix/matrix-appservice-voip/releases),
 or by building the binary yourself.  
 Java JRE 1.8 or higher is required to run the binary.  
 Java JDK 1.8 or higher is required to build the binary.
@@ -34,11 +34,11 @@ Java JDK 1.8 or higher is required to build the binary.
 
 ## Build
 If you would rather build the binary yourself rather than downloading the compiled one of the
-[latest release](https://github.com/kamax-io/matrix-appservice-voip/releases):
+[latest release](https://github.com/kamax-matrix/matrix-appservice-voip/releases):
 
 Checkout the repo:
 ```bash
-git clone https://github.com/kamax-io/matrix-appservice-voip.git
+git clone https://github.com/kamax-matrix/matrix-appservice-voip.git
 cd matrix-appservice-voip
 ```
 
