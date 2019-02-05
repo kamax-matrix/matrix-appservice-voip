@@ -10,8 +10,10 @@
 
 This is a Voice/Video/SMS bridge for Matrix using the Application Services (AS) API.
 
-This software is currently in alpha phase and is not ready for production: Your feedback and ideas are extremely welcome!  
-Please help us by opening an issue or joining us on Matrix at
+This software is currently in beta phase. It is considered stable enough to be used in production, but is not feature
+complete and possibly rough around the edges. Therefore, your feedback and ideas are extremely welcome!
+
+For any issue, idea, improvement, please help us by opening an issue or telling us about it on Matrix at
 [#mxasd-voip:kamax.io](https://matrix.to/#/#mxasd-voip:kamax.io)
 
 # Requirements
