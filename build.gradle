@@ -18,12 +18,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import java.util.regex.Pattern
-
 apply plugin: 'java'
 apply plugin: 'org.springframework.boot'
 
 group = 'kamax.io'
+sourceCompatibility = '1.8'
+targetCompatibility = '1.8'
 
 buildscript {
     repositories {
