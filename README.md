@@ -8,13 +8,11 @@
 
 ---
 
+**This project is no longer maintained.**
+
+---
+
 This is a Voice/Video/SMS bridge for Matrix using the Application Services (AS) API.
-
-This software is currently in beta phase. It is considered stable enough to be used in production, but is not feature
-complete and possibly rough around the edges. Therefore, your feedback and ideas are extremely welcome!
-
-For any issue, idea, improvement, please help us by opening an issue or telling us about it on Matrix at
-[#mxasd-voip:kamax.io](https://matrix.to/#/#mxasd-voip:kamax.io)
 
 # Requirements
 You will need Java 8 to build and run this bridge.
@@ -98,8 +96,3 @@ The following step-by-step assumes you:
 1. Manually compute the Matrix ID, which will be `@_voip_00123456789:example.org`
 2. Create a new room/chat and invite that Matrix ID. This room must only have the virtual user and yourself as members.
 3. Place a call, the device at `00123456789` should ring
-
-# Support
-On Matrix:
-- #mxasd-voip:kamax.io
-- #kamax-mxasd-voip:t2bot.io
